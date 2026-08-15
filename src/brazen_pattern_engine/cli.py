@@ -21,7 +21,13 @@ def _load(path: Path) -> object:
 def _pattern(data: dict) -> Pattern:
     pieces = []
     for p in data["pieces"]:
-        contours = tuple(Polyline(c["name"], tuple(Point(x["xMm"], x["yMm"]) for x in c["points"]), bool(c.get("closed", True))) for c in p["contours"])
+        parsed_contours = []
+        for c in p["contours"]:
+            closed = c.get("closed", True)
+            if not isinstance(closed, bool):
+                raise ValueError(f"{c.get('name', '<unnamed>')}: closed must be boolean")
+            parsed_contours.append(Polyline(c["name"], tuple(Point(x["xMm"], x["yMm"]) for x in c["points"]), closed))
+        contours = tuple(parsed_contours)
         pieces.append(PatternPiece(p["pieceId"], p["blockVersion"], contours, p.get("seamGroups", {})))
     return Pattern(data["compilerVersion"], tuple(pieces), data.get("sourceSpecVersion", "0.1"))
 

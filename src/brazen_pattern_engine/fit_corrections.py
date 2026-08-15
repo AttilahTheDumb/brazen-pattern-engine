@@ -147,10 +147,18 @@ def _validate_correction(correction: object, index: int, observation_count: int,
         errors.append(f"{prefix}.correctedValue must be finite")
     if isinstance(generated, (int, float)) and isinstance(corrected, (int, float)):
         expected = float(corrected) - float(generated)
-        if "deltaValue" in correction and abs(float(correction["deltaValue"]) - expected) > 1e-9:
-            errors.append(f"{prefix}.deltaValue does not equal correctedValue-generatedValue")
-        if "exceedsNoiseFloor" in correction and bool(correction["exceedsNoiseFloor"]) != (abs(expected) >= tolerance_fit_mm):
-            errors.append(f"{prefix}.exceedsNoiseFloor is not the computed noise-floor result")
+        if "deltaValue" in correction:
+            supplied_delta = correction["deltaValue"]
+            if not isinstance(supplied_delta, (int, float)) or isinstance(supplied_delta, bool) or not math.isfinite(float(supplied_delta)):
+                errors.append(f"{prefix}.deltaValue must be finite")
+            elif abs(float(supplied_delta) - expected) > 1e-9:
+                errors.append(f"{prefix}.deltaValue does not equal correctedValue-generatedValue")
+        if "exceedsNoiseFloor" in correction:
+            flag = correction["exceedsNoiseFloor"]
+            if not isinstance(flag, bool):
+                errors.append(f"{prefix}.exceedsNoiseFloor must be boolean")
+            elif flag != (abs(expected) >= tolerance_fit_mm):
+                errors.append(f"{prefix}.exceedsNoiseFloor is not the computed noise-floor result")
     if correction.get("unit") not in _UNITS:
         errors.append(f"{prefix}.unit is invalid")
     elif correction.get("unit") != "mm":

@@ -78,3 +78,10 @@ def test_trainability_requires_explicit_target_and_material_classification():
     assert any("correctionTarget is required" in e for e in errors)
     assert any("material.isToile is required" in e for e in errors)
     assert not is_trainable_correction(invalid, tolerance_fit_mm=10)
+
+
+def test_noise_floor_flag_must_be_a_boolean():
+    invalid = record(corrections=[{"parameter": "block.armscyeDepthMm", "generatedValue": 10, "correctedValue": 20, "deltaValue": 10, "unit": "mm", "addressesObservations": [0], "exceedsNoiseFloor": "false"}])
+    errors = validate_fit_correction(invalid, tolerance_fit_mm=10)
+    assert any("exceedsNoiseFloor must be boolean" in e for e in errors)
+    assert not is_trainable_correction(invalid, tolerance_fit_mm=10)
