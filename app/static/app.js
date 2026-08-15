@@ -25,15 +25,14 @@
   function switchView(view) {
     $$('.view').forEach((node) => { const active = node.id === `${view}-view`; node.hidden = !active; node.classList.toggle('active', active); });
     $$('.nav-item').forEach((node) => { const active = node.dataset.view === view; node.classList.toggle('active', active); node.setAttribute('aria-selected', active); });
-    $('#view-title').textContent = view === 'overview' ? 'Overview' : ({ measurements: 'Measurement floor', corrections: 'Fit corrections', geometry: 'Geometry lab' }[view] || view);
+    $('#view-title').textContent = view === 'overview' ? 'Overview' : ({ measurements: 'Measurement floor', corrections: 'Fit corrections', geometry: 'Reference block' }[view] || view);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   async function loadSample(showToast = true) {
     state.sample = await api('/api/sample');
-    state.fit = state.sample.fitCorrection; state.pattern = state.sample.pattern;
+    state.fit = state.sample.fitCorrection; state.pattern = null;
     $('#correction-state').textContent = state.fit.recordId + ' / loaded';
     setResult('#fit-result', 'Sample record loaded locally. Choose a floor, then validate.', '');
-    renderPattern(state.pattern);
     if (showToast) toast('Sample pattern and fit record loaded locally.');
   }
   function parseFile(input, callback) {
@@ -45,9 +44,9 @@
     const floor = Number($('#fit-floor').value || 10);
     try { const result = await api('/api/validate-fit', { method: 'POST', body: JSON.stringify({ record: state.fit, toleranceFitMm: floor }) }); setResult('#fit-result', pretty(result), result.status === 'PASS' ? 'pass' : 'fail'); $('#correction-state').textContent = `${state.fit.recordId} / ${result.trainable ? 'trainable' : 'retained only'}`; toast(result.status === 'PASS' ? 'Fit-correction gate passed.' : 'Fit-correction record retained with blockers.'); } catch (error) { setResult('#fit-result', error.message, 'fail'); }
   }
-  function renderPattern(pattern) { if (!pattern) return; state.pattern = pattern; $('#hash-label').textContent = 'Ready for deterministic hash'; $('#geometry-result').textContent = 'Pattern loaded locally. Run hash + inspect.'; $('#download-svg').disabled = true; }
+  function renderPattern(pattern) { if (!pattern) return; state.pattern = pattern; $('#hash-label').textContent = 'Reference loaded for inspection'; $('#geometry-result').textContent = 'Digitised reference loaded locally. Validate geometry and provenance.'; $('#download-svg').disabled = true; }
   async function runPattern() {
-    if (!state.pattern) await loadSample(false);
+    if (!state.pattern) { setResult('#geometry-result', 'No digitised reference block loaded. Compilation is blocked until Phase 1 evidence exists.', 'fail'); return; }
     try { const result = await api('/api/hash-pattern', { method: 'POST', body: JSON.stringify({ pattern: state.pattern }) }); state.svg = result.svg; $('#hash-label').textContent = result.patternHash; $('#geometry-result').textContent = `${result.status}\n${result.patternHash}\n\nInspection export only.`; $('#geometry-result').className = 'result-box pass'; $('#svg-preview').innerHTML = `<div class="preview-grid"></div>${result.svg}`; $('#download-svg').disabled = false; toast('Deterministic geometry hash verified.'); } catch (error) { setResult('#geometry-result', error.message, 'fail'); }
   }
   async function runStudy() {
@@ -55,7 +54,7 @@
     const policy = Number($('#tem-policy').value || 0);
     try { const result = await api('/api/repeatability', { method: 'POST', body: JSON.stringify({ sessions: state.study.sessions || state.study, maxRelativeTemPct: policy || null }) }); setResult('#study-result', pretty(result), result.status === 'PASS' ? 'pass' : 'fail'); toast('Repeatability analysis completed locally.'); } catch (error) { setResult('#study-result', error.message, 'fail'); }
   }
-  async function runAll() { await loadSample(false); await runFit(); await runPattern(); toast('Software gates checked. Physical gates remain human-owned.'); }
+  async function runAll() { await loadSample(false); await runFit(); toast('Software gates checked. Physical gates remain human-owned.'); }
   $$('.nav-item').forEach((node) => node.addEventListener('click', () => switchView(node.dataset.view)));
   $$('[data-view-target]').forEach((node) => node.addEventListener('click', () => switchView(node.dataset.viewTarget)));
   $('[data-action="connect-api"]').addEventListener('click', connectApi);

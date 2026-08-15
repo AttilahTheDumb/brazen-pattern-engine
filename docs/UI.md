@@ -23,7 +23,7 @@ The server binds to `127.0.0.1` by default and has no authentication or public e
 - **Overview** — readiness ledger, software/physical gate state, local engine signal.
 - **Measurement floor** — load a study JSON, supply the approved low-TEM policy, and run the real repeatability engine.
 - **Fit corrections** — load or use the sample record and run the real fail-closed validator.
-- **Geometry lab** — load explicit pattern JSON, compute the real SHA-256 hash, render the real inspection SVG, and download it as an inspection artefact.
+- **Reference block** — load a digitised hand-drafted block, validate closed geometry and hash it; no sample geometry is loaded and no fit claim is emitted.
 
 ## API
 

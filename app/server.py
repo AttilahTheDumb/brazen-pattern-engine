@@ -86,7 +86,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(response_payload("ok", engine="brazen-pattern-engine", phase="0", mode="local-only"))
             return
         if route == "/api/sample":
-            self.send_json(response_payload("ok", pattern=read_json(ROOT / "examples" / "pattern.json"), fitCorrection=read_json(ROOT / "examples" / "fit-correction.json")))
+            self.send_json(response_payload("ok", fitCorrection=read_json(ROOT / "examples" / "fit-correction.json")))
             return
         if route == "/" or route == "/index.html":
             self.send_file(STATIC / "index.html")
