@@ -18,6 +18,8 @@ MAX_BODY = 2 * 1024 * 1024
 # Import the actual deterministic engine. The UI is a client, not a second implementation.
 sys.path.insert(0, str(ROOT / "src"))
 from brazen_pattern_engine.cli import _pattern  # noqa: E402
+from brazen_pattern_engine.constraints import evaluate_constraints
+from brazen_pattern_engine.design_ops import apply_seam_allowance, compare_patterns, grade_pattern, pattern_to_dxf
 from brazen_pattern_engine.errors import BrazenError  # noqa: E402
 from brazen_pattern_engine.fit_corrections import is_trainable_correction, validate_fit_correction  # noqa: E402
 from brazen_pattern_engine.geometry import pattern_to_svg  # noqa: E402
@@ -139,6 +141,26 @@ class Handler(BaseHTTPRequestHandler):
                 pattern = _pattern(payload.get("pattern", payload))
                 pattern.validate_closed_contours()
                 self.send_json(response_payload("PASS", patternHash=pattern.content_hash(), compilerVersion=pattern.compiler_version, svg=pattern_to_svg(pattern)))
+                return
+            if route == "/api/design/seam-allowance":
+                pattern = apply_seam_allowance(_pattern(payload["pattern"]), allowance_mm=float(payload["allowanceMm"]))
+                self.send_json(response_payload("PASS", pattern=pattern.to_dict(), svg=pattern_to_svg(pattern), patternHash=pattern.content_hash(), operation="seam-allowance"))
+                return
+            if route == "/api/design/grade":
+                pattern = grade_pattern(_pattern(payload["pattern"]), payload.get("increments", {}))
+                self.send_json(response_payload("PASS", pattern=pattern.to_dict(), svg=pattern_to_svg(pattern), patternHash=pattern.content_hash(), operation="grade"))
+                return
+            if route == "/api/design/compare":
+                report = compare_patterns(_pattern(payload["reference"]), _pattern(payload["candidate"]), tolerance_mm=float(payload.get("toleranceMm", 0.1)))
+                self.send_json(response_payload(str(report["status"]), report=report, operation="compare"))
+                return
+            if route == "/api/design/constraints":
+                report = evaluate_constraints(_pattern(payload["pattern"]), payload.get("constraints", []))
+                self.send_json(response_payload(str(report["status"]), report=report, operation="constraints"))
+                return
+            if route == "/api/export/dxf":
+                pattern = _pattern(payload["pattern"])
+                self.send_json(response_payload("PASS", dxf=pattern_to_dxf(pattern), patternHash=pattern.content_hash(), exportMode="inspection-only"))
                 return
             if route == "/api/repeatability":
                 rows = payload.get("sessions")

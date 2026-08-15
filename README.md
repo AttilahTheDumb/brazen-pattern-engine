@@ -13,7 +13,8 @@ This repository implements the software-verifiable part of the project without m
 - integer tenths-of-a-millimetre geometry coordinates with deterministic rounded segment lengths;
 - repeatability analysis requires an explicit, approved low-TEM policy via `--max-relative-tem-pct`; without it, no measurement becomes `PRIMARY` and no tolerance budget is frozen;
 - the CLI supports repeatability analysis, fit-record validation, pattern hashing, and inspection SVG export;
-- the local Pattern Studio supports real polygonal authoring: draw/move points, close contours, create multiple pieces and contours, undo/redo, local JSON persistence, and engine-backed validation/hash.
+- the local Pattern Studio supports real polygonal authoring: draw/move points, close contours, create multiple pieces and contours, undo/redo, local JSON persistence, and engine-backed validation/hash;
+- downstream deterministic operations include seam-allowance offsets, explicit grading translations, dimensional constraints, reference comparison, and an inspection-only DXF-style export.
 
 ## Deliberate non-claims
 
