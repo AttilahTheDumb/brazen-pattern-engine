@@ -5,6 +5,7 @@ The fillable templates are:
 - `examples/repeatability-study.template.json` — canonical JSON shape consumed by the engine/UI;
 - `examples/repeatability-study.template.csv` — spreadsheet-friendly capture sheet;
 - `examples/synthetic-subject-178cm-101cm.json` — synthetic single-subject exemplar for interface testing;
+- `examples/synthetic-repeatability-178cm-101cm-6-subjects.json` — complete synthetic 24-session fixture for end-to-end UI testing;
 - `app/static/repeatability-study.template.json` — the browser-download copy.
 
 The template contains exactly:
