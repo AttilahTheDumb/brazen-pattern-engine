@@ -1,5 +1,5 @@
 (() => {
-  const state = { sample: null, study: null, fit: null, pattern: null, svg: null };
+  const state = { study: null, fit: null, pattern: null, svg: null };
   const API_BASE = String(window.BRAZEN_API_BASE || '').replace(/\/$/, '');
   let API_TOKEN = sessionStorage.getItem('brazen_api_token') || '';
   const $ = (selector) => document.querySelector(selector);
@@ -22,25 +22,23 @@
     if (!token) return;
     API_TOKEN = token.trim(); sessionStorage.setItem('brazen_api_token', API_TOKEN); $('#connection-status').innerHTML = '<span class="signal-dot"></span>API connected'; toast('API token stored for this browser session.');
   }
+  async function checkHealth() {
+    try { await api('/api/health'); }
+    catch (error) { $('#connection-status').innerHTML = '<span class="signal-dot amber-dot"></span>API offline'; toast('API offline. Connect the protected API before running operations.'); }
+  }
   function switchView(view) {
     $$('.view').forEach((node) => { const active = node.id === `${view}-view`; node.hidden = !active; node.classList.toggle('active', active); });
     $$('.nav-item').forEach((node) => { const active = node.dataset.view === view; node.classList.toggle('active', active); node.setAttribute('aria-selected', active); });
     $('#view-title').textContent = view === 'overview' ? 'Overview' : ({ measurements: 'Measurement floor', corrections: 'Fit corrections', geometry: 'Reference block' }[view] || view);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-  async function loadSample(showToast = true) {
-    state.sample = await api('/api/sample');
-    state.fit = state.sample.fitCorrection; state.pattern = null;
-    $('#correction-state').textContent = state.fit.recordId + ' / loaded';
-    setResult('#fit-result', 'Sample record loaded locally. Choose a floor, then validate.', '');
-    if (showToast) toast('Sample pattern and fit record loaded locally.');
-  }
+
   function parseFile(input, callback) {
     const file = input.files?.[0]; if (!file) return;
     const reader = new FileReader(); reader.onload = () => { try { callback(JSON.parse(reader.result)); toast(`${file.name} loaded locally.`); } catch (error) { toast(`Could not parse ${file.name}: ${error.message}`); } }; reader.readAsText(file);
   }
   async function runFit() {
-    if (!state.fit) await loadSample(false);
+    if (!state.fit) { setResult('#fit-result', 'No fit-correction record loaded. Upload a real record first.', 'fail'); return; }
     const floor = Number($('#fit-floor').value || 10);
     try { const result = await api('/api/validate-fit', { method: 'POST', body: JSON.stringify({ record: state.fit, toleranceFitMm: floor }) }); setResult('#fit-result', pretty(result), result.status === 'PASS' ? 'pass' : 'fail'); $('#correction-state').textContent = `${state.fit.recordId} / ${result.trainable ? 'trainable' : 'retained only'}`; toast(result.status === 'PASS' ? 'Fit-correction gate passed.' : 'Fit-correction record retained with blockers.'); } catch (error) { setResult('#fit-result', error.message, 'fail'); }
   }
@@ -54,12 +52,9 @@
     const policy = Number($('#tem-policy').value || 0);
     try { const result = await api('/api/repeatability', { method: 'POST', body: JSON.stringify({ sessions: state.study.sessions || state.study, maxRelativeTemPct: policy || null }) }); setResult('#study-result', pretty(result), result.status === 'PASS' ? 'pass' : 'fail'); toast('Repeatability analysis completed locally.'); } catch (error) { setResult('#study-result', error.message, 'fail'); }
   }
-  async function runAll() { await loadSample(false); await runFit(); toast('Software gates checked. Physical gates remain human-owned.'); }
   $$('.nav-item').forEach((node) => node.addEventListener('click', () => switchView(node.dataset.view)));
   $$('[data-view-target]').forEach((node) => node.addEventListener('click', () => switchView(node.dataset.viewTarget)));
   $('[data-action="connect-api"]').addEventListener('click', connectApi);
-  $('[data-action="load-sample"]').addEventListener('click', () => loadSample());
-  $('[data-action="run-check"]').addEventListener('click', runAll);
   $('[data-action="validate-fit"]').addEventListener('click', runFit);
   $('[data-action="hash-pattern"]').addEventListener('click', runPattern);
   $('[data-action="run-study"]').addEventListener('click', runStudy);
@@ -68,5 +63,5 @@
   $('#study-file').addEventListener('change', (event) => parseFile(event.target, (data) => { state.study = data; setResult('#study-result', 'Study loaded locally. Enter an approved max inter-TEM policy, then analyse.'); }));
   $('#download-svg').addEventListener('click', () => { if (!state.svg) return; const blob = new Blob([state.svg], { type: 'image/svg+xml' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'brazen-inspection.svg'; link.click(); URL.revokeObjectURL(link.href); });
   document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); $('#view-title').focus?.(); toast('Use the navigation to inspect a workspace.'); } });
-  loadSample(false).catch(() => { $('#connection-status').innerHTML = '<span class="signal-dot amber-dot"></span>API offline'; toast('API offline. Deploy the Render service, then connect the API token.'); });
+  checkHealth();
 })();

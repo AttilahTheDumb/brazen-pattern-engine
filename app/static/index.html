@@ -34,8 +34,7 @@
         <div class="top-actions">
           <span class="local-status" id="connection-status"><span class="signal-dot"></span>Connecting API</span>
           <button class="button ghost connect-button" data-action="connect-api">Connect API</button>
-          <button class="button ghost" data-action="load-sample">Load sample</button>
-          <button class="button primary" data-action="run-check">Run gate check <span>↗</span></button>
+          <button class="button primary" data-view-target="measurements">Open study <span>↗</span></button>
         </div>
       </header>
 
@@ -54,10 +53,10 @@
           </div>
 
           <div class="metric-grid">
-            <article class="metric-card"><div class="metric-top"><span class="label">Software gates</span><span class="status-pill green">PASSING</span></div><strong>28</strong><p>automated tests</p><div class="metric-line"><span style="width: 100%"></span></div></article>
-            <article class="metric-card"><div class="metric-top"><span class="label">Raw sessions</span><span class="status-pill neutral">EMPTY</span></div><strong>00</strong><p>validated study sets</p><div class="metric-line muted"><span style="width: 0%"></span></div></article>
-            <article class="metric-card"><div class="metric-top"><span class="label">Tolerance floor</span><span class="status-pill amber">UNSET</span></div><strong>—</strong><p>input TEM / fit noise</p><div class="metric-line amber-line"><span style="width: 18%"></span></div></article>
-            <article class="metric-card"><div class="metric-top"><span class="label">Physical proof</span><span class="status-pill neutral">BLOCKED</span></div><strong>0</strong><p>validated prototypes</p><div class="metric-line muted"><span style="width: 0%"></span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="label">Engine boundary</span><span class="status-pill green">READY</span></div><strong>LIVE</strong><p>deterministic API surface</p><div class="metric-line"><span style="width: 100%"></span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="label">Measurement study</span><span class="status-pill neutral">NO STUDY</span></div><strong>—</strong><p>load 24 controlled sessions</p><div class="metric-line muted"><span style="width: 0%"></span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="label">Tolerance floor</span><span class="status-pill amber">BLOCKED</span></div><strong>—</strong><p>policy + evidence required</p><div class="metric-line amber-line"><span style="width: 18%"></span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="label">Physical evidence</span><span class="status-pill neutral">HUMAN GATE</span></div><strong>—</strong><p>pattern cutter + leather review</p><div class="metric-line muted"><span style="width: 0%"></span></div></article>
           </div>
 
           <div class="section-heading"><div><p class="eyebrow">READINESS LEDGER</p><h2>What is proven, and what is not</h2></div><span class="mono-note">updated locally / no network</span></div>
@@ -73,9 +72,10 @@
               <button class="text-action" data-view-target="measurements">Open measurement floor <span>→</span></button>
             </section>
             <section class="panel signal-panel">
-              <div class="panel-head"><div><h3>System signal</h3><p>Deterministic path / local-only boundary</p></div><span class="panel-icon signal-icon">✦</span></div>
-              <div class="signal-graphic"><div class="signal-axis"></div><div class="signal-path"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="axis-label x">time</span><span class="axis-label y">proof</span></div>
-              <div class="signal-foot"><span><i class="legend-dot green-dot"></i> engine stable</span><span><i class="legend-dot amber-dot"></i> human gate open</span></div>
+              <div class="panel-head"><div><h3>Next gate</h3><p>The next useful action, not a decorative metric.</p></div><span class="panel-icon signal-icon">→</span></div>
+              <div class="next-gate"><span class="gate-number">00</span><div><strong>Run the controlled measurement study</strong><p>Validate the protocol, collect six subjects × two measurers × two sessions, then approve the low-TEM policy.</p></div></div>
+              <ul class="next-steps"><li>Download the blank 24-session template</li><li>Capture raw values only, in millimetres</li><li>Return here for deterministic analysis</li></ul>
+              <button class="text-action" data-view-target="measurements">Open measurement floor <span>→</span></button>
             </section>
           </div>
         </section>
@@ -89,7 +89,7 @@
         </section>
 
         <section class="view" id="corrections-view" role="tabpanel" aria-labelledby="corrections-tab" hidden>
-          <div class="view-header"><div><p class="eyebrow">FIT DATA / PROVENANCE</p><h1>Fit corrections<span class="accent-dot">.</span></h1><p class="lede">Keep symptoms separate from corrections. Only verified, resolved, non-ambiguous records above the material-aware noise floor may train or aggregate.</p></div><div class="header-note"><span class="label">CURRENT SAMPLE</span><strong id="correction-state">Not loaded</strong><small>Use the sample button to inspect the schema path.</small></div></div>
+          <div class="view-header"><div><p class="eyebrow">FIT DATA / PROVENANCE</p><h1>Fit corrections<span class="accent-dot">.</span></h1><p class="lede">Keep symptoms separate from corrections. Only verified, resolved, non-ambiguous records above the material-aware noise floor may train or aggregate.</p></div><div class="header-note"><span class="label">CURRENT RECORD</span><strong id="correction-state">Not loaded</strong><small>Upload a real record; no sample is injected into the workflow.</small></div></div>
           <div class="action-grid">
             <section class="panel import-panel"><div class="panel-head"><div><h3>Record input</h3><p>Validate against the live engine contract.</p></div><span class="file-badge">FC / 00000</span></div><label class="drop-zone compact" for="fit-file"><span class="drop-symbol">＋</span><strong>Choose a fit-correction JSON</strong><small>local file only</small><input id="fit-file" type="file" accept="application/json,.json"></label><div class="form-row"><label for="fit-floor">Fit noise floor (mm):</label><input id="fit-floor" type="number" step="0.1" min="0.1" placeholder="e.g. 10"></div><button class="button primary wide" data-action="validate-fit">Validate record <span>↗</span></button><div id="fit-result" class="result-box" aria-live="polite">No record loaded.</div></section>
             <section class="panel correction-panel"><div class="panel-head"><div><h3>Eligibility rules</h3><p>Hard gates, no composite score.</p></div><span class="panel-icon">⊕</span></div><ul class="rule-list"><li><span class="rule-icon green">✓</span><div><strong>Verified subsequent fitting</strong><small>Self-reference and unresolved outcomes fail.</small></div></li><li><span class="rule-icon green">✓</span><div><strong>Explicit target + material</strong><small>Block/garment context cannot be inferred.</small></div></li><li><span class="rule-icon amber">!</span><div><strong>Above noise floor</strong><small>Only millimetre corrections have a v0.1 floor.</small></div></li><li><span class="rule-icon muted">—</span><div><strong>Physical evidence remains human</strong><small>Software validates the record, not the fit.</small></div></li></ul></section>
