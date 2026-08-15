@@ -1,0 +1,23 @@
+{
+  "sourceSpecVersion": "0.1",
+  "compilerVersion": "compiler-v0.1",
+  "pieces": [
+    {
+      "pieceId": "left-front-reference",
+      "blockVersion": "JosephBlock-v0.3",
+      "contours": [
+        {
+          "name": "outer",
+          "closed": true,
+          "points": [
+            {"xMm": 0, "yMm": 0},
+            {"xMm": 180, "yMm": 0},
+            {"xMm": 180, "yMm": 320},
+            {"xMm": 0, "yMm": 320}
+          ]
+        }
+      ],
+      "seamGroups": {}
+    }
+  ]
+}

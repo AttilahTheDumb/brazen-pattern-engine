@@ -1,0 +1,18 @@
+{
+  "recordId": "FC-00001",
+  "createdAt": "2026-08-15T10:00:00Z",
+  "schemaVersion": "0.1",
+  "subjectId": "subject-001",
+  "measurementSessionId": "session-001",
+  "blockVersion": "JosephBlock-v0.3",
+  "garmentVersion": null,
+  "correctionTarget": "block",
+  "material": {"class": "calico_toile", "thicknessMm": 0.5, "isToile": false},
+  "construction": {"seamType": "plain_pressed_open", "seamAllowanceMm": 10},
+  "prototype": {"patternHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "compilerVersion": "compiler-v0.1"},
+  "observations": [{"region": "left_shoulder", "symptom": "gaping", "severity": "moderate"}],
+  "corrections": [{"parameter": "block.armscyeDepthMm", "generatedValue": 10, "correctedValue": 20, "deltaValue": 10, "unit": "mm", "addressesObservations": [0], "exceedsNoiseFloor": true}],
+  "assessedBy": {"role": "pattern_cutter", "personId": "pc-001", "experienceWithMaterial": "familiar"},
+  "verification": {"verifiedByRecordId": "FC-00002", "outcome": "resolved"},
+  "status": "verified"
+}

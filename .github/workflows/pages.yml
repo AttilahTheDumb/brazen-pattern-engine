@@ -1,0 +1,40 @@
+name: Deploy Brazen console to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build static site
+        run: |
+          mkdir -p _site/static
+          cp app/static/index.html app/static/styles.css app/static/app.js _site/static/
+          printf '%s\n' '// Generated for GitHub Pages. The API token is entered per browser session.' 'window.BRAZEN_API_BASE = "https://brazen-pattern-engine-api.onrender.com";' > _site/static/config.js
+          touch _site/.nojekyll
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

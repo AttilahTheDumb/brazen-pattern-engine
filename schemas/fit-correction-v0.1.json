@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brazenwear.dev/schemas/fit-correction/v0.1.json",
+  "title": "Brazen Fit Correction Record v0.1",
+  "type": "object",
+  "required": ["recordId", "createdAt", "subjectId", "measurementSessionId", "blockVersion", "correctionTarget", "material", "construction", "prototype", "observations", "assessedBy"],
+  "additionalProperties": false,
+  "properties": {
+    "recordId": {"type": "string", "pattern": "^FC-[0-9]{5}$"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "schemaVersion": {"const": "0.1"},
+    "subjectId": {"type": "string"},
+    "measurementSessionId": {"type": "string"},
+    "blockVersion": {"type": "string", "pattern": "^[A-Za-z0-9-]+-v[0-9]+\\.[0-9]+$"},
+    "garmentVersion": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9-]+-v[0-9]+\\.[0-9]+$"},
+    "correctionTarget": {"enum": ["block", "garment", "ambiguous"]},
+    "material": {"$ref": "#/$defs/material"},
+    "construction": {"type": "object", "additionalProperties": true},
+    "prototype": {"type": "object", "required": ["patternHash", "compilerVersion"], "additionalProperties": true},
+    "observations": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["region", "symptom", "severity"], "additionalProperties": true}},
+    "corrections": {"type": "array", "items": {"type": "object", "required": ["parameter", "generatedValue", "correctedValue", "unit", "addressesObservations"], "additionalProperties": true}},
+    "assessedBy": {"type": "object", "required": ["role", "personId"], "additionalProperties": true},
+    "verification": {"type": ["object", "null"]},
+    "status": {"enum": ["provisional", "verified", "superseded", "rejected"]}
+  },
+  "$defs": {
+    "material": {
+      "type": "object",
+      "required": ["class", "thicknessMm", "isToile"],
+      "additionalProperties": false,
+      "properties": {
+        "class": {"enum": ["calico_toile", "cotton_drill", "wool_suiting", "lambskin", "goatskin", "calfskin", "veg_tan", "chrome_tan", "bonded_composite", "other"]},
+        "specificName": {"type": "string"},
+        "thicknessMm": {"type": "number", "minimum": 0.1, "maximum": 10},
+        "temper": {"enum": ["very_soft", "soft", "medium", "firm", "rigid"]},
+        "stretchWarpPct": {"type": "number"},
+        "stretchWeftPct": {"type": "number"},
+        "recovery": {"enum": ["full", "partial", "none"]},
+        "isToile": {"type": "boolean"},
+        "substituteFor": {"type": ["string", "null"]}
+      }
+    }
+  }
+}

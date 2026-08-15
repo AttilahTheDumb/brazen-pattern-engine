@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: brazen-pattern-engine-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: BRAZEN_HOST
+        value: 0.0.0.0
+      - key: BRAZEN_ALLOWED_ORIGIN
+        value: https://attilahthedumb.github.io
+      - key: BRAZEN_API_SECRET
+        generateValue: true

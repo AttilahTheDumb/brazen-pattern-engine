@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brazen-pattern-engine"
+version = "0.1.0"
+description = "Deterministic, evidence-led foundations for the Brazen leather pattern engine"
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "Proprietary / project-owned"}
+authors = [{name = "Brazen Wear"}]
+dependencies = []
+
+[project.scripts]
+bpe = "brazen_pattern_engine.cli:main"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

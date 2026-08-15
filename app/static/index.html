@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d0e">
+  <meta name="description" content="Brazen Pattern Engine local operations console">
+  <title>Brazen / Pattern Engine</title>
+  <link rel="stylesheet" href="static/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand-lockup">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div><strong>BRAZEN</strong><small>Pattern Engine</small></div>
+      </div>
+      <div class="workspace-chip"><span class="signal-dot"></span><span>Local workspace</span><kbd>⌘ K</kbd></div>
+      <nav class="nav-list" role="tablist" aria-label="Console views">
+        <button class="nav-item active" role="tab" aria-selected="true" aria-controls="overview-view" data-view="overview"><span class="nav-glyph">◈</span>Overview</button>
+        <button class="nav-item" role="tab" aria-selected="false" aria-controls="measurements-view" data-view="measurements"><span class="nav-glyph">⌁</span>Measurement floor</button>
+        <button class="nav-item" role="tab" aria-selected="false" aria-controls="corrections-view" data-view="corrections"><span class="nav-glyph">⊕</span>Fit corrections</button>
+        <button class="nav-item" role="tab" aria-selected="false" aria-controls="geometry-view" data-view="geometry"><span class="nav-glyph">⌗</span>Geometry lab</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="phase-stamp"><span>PHASE 0</span><b>Software foundation</b></div>
+        <p>Physical fit remains a human gate.</p>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="crumb"><span class="crumb-muted">Pattern Engine</span><span>/</span><strong id="view-title">Overview</strong></div>
+        <div class="top-actions">
+          <span class="local-status" id="connection-status"><span class="signal-dot"></span>Engine online</span>
+          <button class="button ghost connect-button" data-action="connect-api">Connect API</button>
+          <button class="button ghost" data-action="load-sample">Load sample</button>
+          <button class="button primary" data-action="run-check">Run gate check <span>↗</span></button>
+        </div>
+      </header>
+
+      <div class="content-wrap">
+        <section class="view active" id="overview-view" role="tabpanel" aria-labelledby="overview-tab">
+          <div class="intro-grid">
+            <div>
+              <p class="eyebrow">OPERATE / PHASE 0</p>
+              <h1>Evidence before geometry<span class="accent-dot">.</span></h1>
+              <p class="lede">A local control surface for the Brazen Pattern Engine. Keep the measurement floor honest, preserve provenance and never confuse internal consistency with physical fit.</p>
+            </div>
+            <div class="intro-aside">
+              <div class="ring-wrap"><div class="phase-ring"><strong>0</strong><span>/ 7</span></div></div>
+              <div><span class="label">CURRENT GATE</span><strong>Measurement floor</strong><small>Human protocol validation pending</small></div>
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card"><div class="metric-top"><span class="label">Software gates</span><span class="status-pill green">PASSING</span></div><strong>28</strong><p>automated tests</p><div class="metric-line"><span style="width: 100%"></span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="label">Raw sessions</span><span class="status-pill neutral">EMPTY</span></div><strong>00</strong><p>validated study sets</p><div class="metric-line muted"><span style="width: 0%"></span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="label">Tolerance floor</span><span class="status-pill amber">UNSET</span></div><strong>—</strong><p>input TEM / fit noise</p><div class="metric-line amber-line"><span style="width: 18%"></span></div></article>
+            <article class="metric-card"><div class="metric-top"><span class="label">Physical proof</span><span class="status-pill neutral">BLOCKED</span></div><strong>0</strong><p>validated prototypes</p><div class="metric-line muted"><span style="width: 0%"></span></div></article>
+          </div>
+
+          <div class="section-heading"><div><p class="eyebrow">READINESS LEDGER</p><h2>What is proven, and what is not</h2></div><span class="mono-note">updated locally / no network</span></div>
+          <div class="workspace-grid">
+            <section class="panel ledger-panel">
+              <div class="panel-head"><div><h3>Phase sequence</h3><p>Every phase opens only after its predecessor is evidenced.</p></div><span class="panel-icon">↯</span></div>
+              <div class="ledger-list">
+                <div class="ledger-row current"><span class="phase-index">00</span><div><strong>Measurement floor</strong><small>TEM study, classification, fixed tolerances</small></div><span class="row-state amber">OPEN</span></div>
+                <div class="ledger-row"><span class="phase-index">01</span><div><strong>Hand-drafted reference block</strong><small>Leather specialist review + physical assessment</small></div><span class="row-state muted-state">LOCKED</span></div>
+                <div class="ledger-row"><span class="phase-index">02</span><div><strong>Reproduction</strong><small>Deterministic comparison to gold pattern</small></div><span class="row-state muted-state">LOCKED</span></div>
+                <div class="ledger-row"><span class="phase-index">03</span><div><strong>Generalisation</strong><small>Three new bodies, one correction round max</small></div><span class="row-state muted-state">LOCKED</span></div>
+              </div>
+              <button class="text-action" data-view-target="measurements">Open measurement floor <span>→</span></button>
+            </section>
+            <section class="panel signal-panel">
+              <div class="panel-head"><div><h3>System signal</h3><p>Deterministic path / local-only boundary</p></div><span class="panel-icon signal-icon">✦</span></div>
+              <div class="signal-graphic"><div class="signal-axis"></div><div class="signal-path"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="axis-label x">time</span><span class="axis-label y">proof</span></div>
+              <div class="signal-foot"><span><i class="legend-dot green-dot"></i> engine stable</span><span><i class="legend-dot amber-dot"></i> human gate open</span></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="measurements-view" role="tabpanel" aria-labelledby="measurements-tab" hidden>
+          <div class="view-header"><div><p class="eyebrow">PHASE 0 / REPEATABILITY</p><h1>Measurement floor<span class="accent-dot">.</span></h1><p class="lede">Load a complete 24-session study when the protocol has been executed. The engine will refuse incomplete, unlandmarked or policy-free data.</p></div><div class="header-note"><span class="label">REQUIRED DESIGN</span><strong>6 subjects × 2 measurers × 2 sessions</strong><small>25 raw measurements per session</small></div></div>
+          <div class="action-grid">
+            <section class="panel import-panel"><div class="panel-head"><div><h3>Study input</h3><p>JSON stays local. Nothing is uploaded.</p></div><span class="file-badge">.JSON</span></div><label class="drop-zone" for="study-file"><span class="drop-symbol">＋</span><strong>Choose a study file</strong><small>or drop measurement-session JSON here</small><input id="study-file" type="file" accept="application/json,.json"></label><div class="form-row"><label for="tem-policy">Approved max inter-TEM (%):</label><input id="tem-policy" type="number" step="0.01" min="0.01" placeholder="e.g. 1.5"></div><button class="button primary wide" data-action="run-study">Analyse study <span>↗</span></button><div id="study-result" class="result-box" aria-live="polite">No study loaded.</div></section>
+            <section class="panel results-panel"><div class="panel-head"><div><h3>Floor output</h3><p>Classification remains unset until policy is explicit.</p></div><span class="status-pill amber">UNSET</span></div><div class="empty-state"><div class="empty-mark">⌁</div><strong>Awaiting raw evidence</strong><p>Run the approved measurement protocol first. Synthetic samples are not treated as evidence.</p></div></section>
+          </div>
+        </section>
+
+        <section class="view" id="corrections-view" role="tabpanel" aria-labelledby="corrections-tab" hidden>
+          <div class="view-header"><div><p class="eyebrow">FIT DATA / PROVENANCE</p><h1>Fit corrections<span class="accent-dot">.</span></h1><p class="lede">Keep symptoms separate from corrections. Only verified, resolved, non-ambiguous records above the material-aware noise floor may train or aggregate.</p></div><div class="header-note"><span class="label">CURRENT SAMPLE</span><strong id="correction-state">Not loaded</strong><small>Use the sample button to inspect the schema path.</small></div></div>
+          <div class="action-grid">
+            <section class="panel import-panel"><div class="panel-head"><div><h3>Record input</h3><p>Validate against the live engine contract.</p></div><span class="file-badge">FC / 00000</span></div><label class="drop-zone compact" for="fit-file"><span class="drop-symbol">＋</span><strong>Choose a fit-correction JSON</strong><small>local file only</small><input id="fit-file" type="file" accept="application/json,.json"></label><div class="form-row"><label for="fit-floor">Fit noise floor (mm):</label><input id="fit-floor" type="number" step="0.1" min="0.1" placeholder="e.g. 10"></div><button class="button primary wide" data-action="validate-fit">Validate record <span>↗</span></button><div id="fit-result" class="result-box" aria-live="polite">No record loaded.</div></section>
+            <section class="panel correction-panel"><div class="panel-head"><div><h3>Eligibility rules</h3><p>Hard gates, no composite score.</p></div><span class="panel-icon">⊕</span></div><ul class="rule-list"><li><span class="rule-icon green">✓</span><div><strong>Verified subsequent fitting</strong><small>Self-reference and unresolved outcomes fail.</small></div></li><li><span class="rule-icon green">✓</span><div><strong>Explicit target + material</strong><small>Block/garment context cannot be inferred.</small></div></li><li><span class="rule-icon amber">!</span><div><strong>Above noise floor</strong><small>Only millimetre corrections have a v0.1 floor.</small></div></li><li><span class="rule-icon muted">—</span><div><strong>Physical evidence remains human</strong><small>Software validates the record, not the fit.</small></div></li></ul></section>
+          </div>
+        </section>
+
+        <section class="view" id="geometry-view" role="tabpanel" aria-labelledby="geometry-tab" hidden>
+          <div class="view-header"><div><p class="eyebrow">INSPECT / DETERMINISTIC GEOMETRY</p><h1>Geometry lab<span class="accent-dot">.</span></h1><p class="lede">Hash explicit geometry, verify closed contours and preview the inspection export. This surface never labels a pattern manufacturing-ready.</p></div><div class="header-note"><span class="label">EXPORT MODE</span><strong>Inspection only</strong><small>True-scale manufacturing export is a later phase gate.</small></div></div>
+          <div class="geometry-grid"><section class="panel geometry-input"><div class="panel-head"><div><h3>Pattern source</h3><p>Load explicit geometry JSON or use the sample.</p></div><span class="file-badge">SVG / SHA-256</span></div><label class="drop-zone compact" for="pattern-file"><span class="drop-symbol">＋</span><strong>Choose a pattern JSON</strong><small>local file only</small><input id="pattern-file" type="file" accept="application/json,.json"></label><button class="button primary wide" data-action="hash-pattern">Hash + inspect <span>↗</span></button><div id="geometry-result" class="result-box" aria-live="polite">No pattern loaded.</div></section><section class="panel preview-panel"><div class="panel-head"><div><h3>Inspection preview</h3><p id="hash-label">No geometry hash yet</p></div><span class="status-pill neutral">NOT RELEASE</span></div><div id="svg-preview" class="svg-preview"><div class="preview-grid"></div><span>Load a pattern to preview</span></div><button class="text-action" id="download-svg" disabled>Download inspection SVG <span>↓</span></button></section></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="static/config.js"></script>
+  <script src="static/app.js"></script>
+</body>
+</html>

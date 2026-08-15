@@ -1,0 +1,5 @@
+FROM python:3.11-slim
+WORKDIR /app
+COPY . .
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 BRAZEN_HOST=0.0.0.0
+CMD ["python", "-m", "app.server"]
