@@ -1,5 +1,6 @@
 from brazen_pattern_engine.cli import _pattern
 from brazen_pattern_engine.constraints import evaluate_constraints
+import pytest
 
 
 def pattern():
@@ -22,3 +23,13 @@ def test_dimension_constraint_can_bind_to_explicit_measurement_profile():
     result = evaluate_constraints(pattern(), [{"pieceId": "front", "contour": "outer", "fromIndex": 0, "toIndex": 1, "kind": "distance", "measurementId": "G_CHEST", "toleranceMm": 0.1}], {"G_CHEST": 100})
     assert result["status"] == "PASS"
     assert result["constraints"][0]["source"] == "measurement:G_CHEST"
+
+
+def test_empty_constraint_set_is_not_a_pass():
+    with pytest.raises(Exception, match="at least one"):
+        evaluate_constraints(pattern(), [])
+
+
+def test_infinite_tolerance_is_rejected():
+    with pytest.raises(Exception, match="finite"):
+        evaluate_constraints(pattern(), [{"pieceId": "front", "contour": "outer", "fromIndex": 0, "toIndex": 1, "kind": "distance", "valueMm": 100, "toleranceMm": float("inf")}])

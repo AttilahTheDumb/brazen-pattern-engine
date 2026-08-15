@@ -186,7 +186,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(response_payload("PASS", results=results, toleranceBudget=budget.__dict__))
                 return
             self.send_json(response_payload("FAIL", error="unknown API route"), HTTPStatus.NOT_FOUND)
-        except (BrazenError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        except (BrazenError, KeyError, TypeError, ValueError, json.JSONDecodeError, AttributeError, IndexError, OverflowError) as exc:
             self.send_json(response_payload("FAIL", error=str(exc)), HTTPStatus.BAD_REQUEST)
 
 

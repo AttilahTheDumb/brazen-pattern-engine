@@ -36,6 +36,12 @@ def test_compare_reports_zero_for_identical_patterns():
     assert report["maxPointDeltaMm"] == 0.0
 
 
+def test_compare_detects_curve_control_changes():
+    report = compare_patterns(rectangle(), smooth_contour(rectangle(), piece_id="front", contour_name="outer"), tolerance_mm=0.1)
+    assert report["status"] == "FAIL"
+    assert any("curve control" in error for error in report["structuralErrors"])
+
+
 def test_dxf_export_is_explicitly_inspection_only():
     dxf = pattern_to_dxf(rectangle())
     assert "INSPECTION ONLY" in dxf
@@ -54,3 +60,13 @@ def test_seam_allowance_flattens_curves_deterministically_when_requested():
     result = apply_seam_allowance(curved, allowance_mm=10, flatten_tolerance_mm=0.1, max_segments=256)
     assert result.pieces[0].contours[0].controls == ()
     assert len(result.pieces[0].contours[0].points) > 4
+
+
+def test_unknown_selectors_and_boolean_numeric_values_fail_closed():
+    import pytest
+    with pytest.raises(Exception, match="contour"):
+        apply_seam_allowance(rectangle(), allowance_mm=10, contour_names={"missing"})
+    with pytest.raises(Exception, match="piece"):
+        grade_pattern(rectangle(), {"missing": {"xMm": 5, "yMm": 5}})
+    with pytest.raises(Exception, match="finite|number"):
+        apply_seam_allowance(rectangle(), allowance_mm=True)

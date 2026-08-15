@@ -5,12 +5,26 @@ leather behaviour, manufacturing approval, or a validated drafting rule set.
 """
 from __future__ import annotations
 
+import math
+import re
 from dataclasses import replace
 from math import hypot
 from typing import Mapping
 
 from .errors import GateFailure, ValidationError
 from .geometry import Pattern, PatternPiece, Point, Polyline
+
+
+def _finite_number(value: object, label: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+        raise ValidationError(f"{label} must be a finite number")
+    return float(value)
+
+
+def _safe_dxf_identifier(value: str) -> str:
+    if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]{0,63}", value):
+        raise ValidationError("piece IDs must be DXF-safe identifiers")
+    return value
 
 
 def _line_intersection(a: tuple[float, float], b: tuple[float, float], c: tuple[float, float], d: tuple[float, float]) -> tuple[float, float]:
@@ -26,6 +40,8 @@ def _line_intersection(a: tuple[float, float], b: tuple[float, float], c: tuple[
 def _offset_contour(contour: Polyline, allowance_mm: float, *, flatten_tolerance_mm: float, max_segments: int) -> Polyline:
     if not contour.closed:
         raise GateFailure(f"{contour.name}: seam allowance requires a closed contour")
+    allowance_mm = _finite_number(allowance_mm, "seam allowance")
+    flatten_tolerance_mm = _finite_number(flatten_tolerance_mm, "flatten tolerance")
     if allowance_mm <= 0:
         raise ValidationError("seam allowance must be > 0")
     if flatten_tolerance_mm <= 0 or max_segments < 4:
@@ -56,6 +72,12 @@ def _offset_contour(contour: Polyline, allowance_mm: float, *, flatten_tolerance
 
 def apply_seam_allowance(pattern: Pattern, *, allowance_mm: float, contour_names: set[str] | None = None, flatten_tolerance_mm: float = 0.1, max_segments: int = 1024) -> Pattern:
     """Return a deterministic inspection pattern with an explicit seam offset."""
+    pattern.validate_closed_contours()
+    if contour_names is not None:
+        known = {contour.name for piece in pattern.pieces for contour in piece.contours}
+        unknown = set(contour_names) - known
+        if unknown:
+            raise ValidationError(f"unknown contour selector: {sorted(unknown)}")
     contours: list[PatternPiece] = []
     for piece in pattern.pieces:
         updated = tuple(_offset_contour(contour, allowance_mm, flatten_tolerance_mm=flatten_tolerance_mm, max_segments=max_segments) if contour_names is None or contour.name in contour_names else contour for contour in piece.contours)
@@ -65,11 +87,19 @@ def apply_seam_allowance(pattern: Pattern, *, allowance_mm: float, contour_names
 
 def grade_pattern(pattern: Pattern, increments: Mapping[str, Mapping[str, float]]) -> Pattern:
     """Translate pieces by explicit x/y size increments; no anthropometric grading is inferred."""
+    pattern.validate_closed_contours()
+    if not isinstance(increments, Mapping):
+        raise ValidationError("grading increments must be an object")
+    unknown = set(increments) - {piece.piece_id for piece in pattern.pieces}
+    if unknown:
+        raise ValidationError(f"unknown grading piece selector: {sorted(unknown)}")
     updated: list[PatternPiece] = []
     for piece in pattern.pieces:
         rule = increments.get(piece.piece_id, {})
-        dx, dy = float(rule.get("xMm", 0)), float(rule.get("yMm", 0))
-        if not all(map(lambda value: abs(value) < 1e6, (dx, dy))):
+        if not isinstance(rule, Mapping):
+            raise ValidationError(f"{piece.piece_id}: grading rule must be an object")
+        dx, dy = _finite_number(rule.get("xMm", 0), f"{piece.piece_id}.xMm"), _finite_number(rule.get("yMm", 0), f"{piece.piece_id}.yMm")
+        if not all(abs(value) < 1e6 for value in (dx, dy)):
             raise ValidationError(f"{piece.piece_id}: grading increment is out of bounds")
         contours = []
         for contour in piece.contours:
@@ -88,6 +118,7 @@ def grade_table(pattern: Pattern, sizes: Mapping[str, Mapping[str, Mapping[str, 
 
 def smooth_contour(pattern: Pattern, *, piece_id: str, contour_name: str, tension: float = 0.25) -> Pattern:
     """Add deterministic cubic Bézier handles to one closed contour."""
+    tension = _finite_number(tension, "curve tension")
     if not 0 < tension <= 1:
         raise ValidationError("curve tension must be > 0 and <= 1")
     updated: list[PatternPiece] = []
@@ -117,6 +148,9 @@ def smooth_contour(pattern: Pattern, *, piece_id: str, contour_name: str, tensio
 
 
 def compare_patterns(reference: Pattern, candidate: Pattern, *, tolerance_mm: float) -> dict[str, object]:
+    reference.validate_closed_contours()
+    candidate.validate_closed_contours()
+    tolerance_mm = _finite_number(tolerance_mm, "comparison tolerance")
     if tolerance_mm < 0:
         raise ValidationError("comparison tolerance must be >= 0")
     reference_pieces = {piece.piece_id: piece for piece in reference.pieces}
@@ -135,6 +169,8 @@ def compare_patterns(reference: Pattern, candidate: Pattern, *, tolerance_mm: fl
             if ref.closed != cand.closed or len(ref.points) != len(cand.points):
                 structural.append(f"shape mismatch: {piece_id}/{name}")
                 continue
+            if ref.controls != cand.controls:
+                structural.append(f"curve control mismatch: {piece_id}/{name}")
             deltas.extend(hypot(float(a.x - b.x), float(a.y - b.y)) for a, b in zip(ref.points, cand.points))
     max_delta = round(max(deltas, default=0.0), 6)
     return {"status": "PASS" if not structural and max_delta <= tolerance_mm else "FAIL", "toleranceMm": tolerance_mm, "maxPointDeltaMm": max_delta, "structuralErrors": structural, "comparedPoints": len(deltas)}
@@ -145,12 +181,13 @@ def pattern_to_dxf(pattern: Pattern) -> str:
     pattern.validate_closed_contours()
     lines = ["0", "SECTION", "2", "HEADER", "9", "$COMMENT", "1", "BRAZEN INSPECTION ONLY - NOT MANUFACTURING APPROVAL; CURVES FLATTENED TO POLYLINE", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES"]
     for piece in sorted(pattern.pieces, key=lambda item: item.piece_id):
+        piece_id = _safe_dxf_identifier(piece.piece_id)
         for contour in sorted(piece.contours, key=lambda item: item.name):
-            lines += ["0", "POLYLINE", "8", piece.piece_id, "66", "1", "70", "1"]
+            lines += ["0", "POLYLINE", "8", piece_id, "66", "1", "70", "1"]
             export_points = contour._sampled_points()
             for point in export_points:
-                lines += ["0", "VERTEX", "8", piece.piece_id, "10", f"{float(point.x):.1f}", "20", f"{float(point.y):.1f}", "30", "0.0"]
+                lines += ["0", "VERTEX", "8", piece_id, "10", f"{float(point.x):.1f}", "20", f"{float(point.y):.1f}", "30", "0.0"]
             first = export_points[0]
-            lines += ["0", "VERTEX", "8", piece.piece_id, "10", f"{float(first.x):.1f}", "20", f"{float(first.y):.1f}", "30", "0.0", "0", "SEQEND"]
+            lines += ["0", "VERTEX", "8", piece_id, "10", f"{float(first.x):.1f}", "20", f"{float(first.y):.1f}", "30", "0.0", "0", "SEQEND"]
     lines += ["0", "ENDSEC", "0", "EOF", ""]
     return "\n".join(lines)

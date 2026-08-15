@@ -74,6 +74,22 @@ def test_duplicate_closing_vertex_and_bow_tie_fail():
         raise AssertionError("self-intersecting contour should fail")
 
 
+def test_rendered_curve_self_intersection_is_rejected():
+    points = (Point(0, 0), Point(100, 0), Point(100, 100), Point(0, 100))
+    controls = (
+        (Point(-63.4, -125.7), Point(54.3, -153.9)),
+        (Point(12.9, -48.4), Point(-159.1, 2.7)),
+        (Point(-166.5, -23.9), Point(-154.9, -147.3)),
+        (Point(-27.2, 117.7), Point(-135.4, -99.6)),
+    )
+    try:
+        Polyline("curved-crossing", points, True, controls)
+    except ValueError as exc:
+        assert "rendered curve self-intersects" in str(exc)
+    else:
+        raise AssertionError("rendered self-intersecting curve should fail")
+
+
 def test_svg_preserves_negative_bounds_and_escapes_identifiers():
     piece = PatternPiece("left<&", "Block-v1.0", (Polyline("outer<&", (Point(-10, -20), Point(0, -20), Point(0, 0), Point(-10, 0))),))
     svg = pattern_to_svg(Pattern("compiler-v0.1", (piece,)))

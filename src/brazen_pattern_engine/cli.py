@@ -19,15 +19,29 @@ def _load(path: Path) -> object:
 
 
 def _pattern(data: dict) -> Pattern:
+    if not isinstance(data, dict):
+        raise ValueError("pattern must be an object")
+    raw_pieces = data.get("pieces")
+    if not isinstance(raw_pieces, list):
+        raise ValueError("pieces must be an array")
     pieces = []
-    for p in data["pieces"]:
+    for p in raw_pieces:
+        if not isinstance(p, dict):
+            raise ValueError("each piece must be an object")
         parsed_contours = []
-        for c in p["contours"]:
+        raw_contours = p.get("contours")
+        if not isinstance(raw_contours, list):
+            raise ValueError("contours must be an array")
+        for c in raw_contours:
+            if not isinstance(c, dict):
+                raise ValueError("each contour must be an object")
             closed = c.get("closed", True)
             if not isinstance(closed, bool):
                 raise ValueError(f"{c.get('name', '<unnamed>')}: closed must be boolean")
             parsed_points = tuple(Point(x["xMm"], x["yMm"]) for x in c["points"])
             raw_controls = c.get("controls", [])
+            if not isinstance(raw_controls, list):
+                raise ValueError(f"{c.get('name', '<unnamed>')}: controls must be an array")
             controls = tuple((Point(item["in"]["xMm"], item["in"]["yMm"]) if item.get("in") else None, Point(item["out"]["xMm"], item["out"]["yMm"]) if item.get("out") else None) for item in raw_controls) if raw_controls else ()
             parsed_contours.append(Polyline(c["name"], parsed_points, closed, controls))
         contours = tuple(parsed_contours)

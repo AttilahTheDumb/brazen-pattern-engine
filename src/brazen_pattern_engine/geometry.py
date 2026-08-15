@@ -88,6 +88,15 @@ class Polyline:
                         continue
                     if _segments_intersect(a, b, c, d):
                         raise ValidationError(f"{self.name}: non-adjacent edges intersect")
+            if self.controls and any(in_handle or out_handle for in_handle, out_handle in self.controls):
+                rendered = self._sampled_points()
+                rendered_edges = list(zip(rendered, rendered[1:] + (rendered[0],)))
+                for first, (a, b) in enumerate(rendered_edges):
+                    for second, (c, d) in enumerate(rendered_edges[first + 1:], start=first + 1):
+                        if second == first + 1 or (first == 0 and second == len(rendered_edges) - 1):
+                            continue
+                        if _segments_intersect(a, b, c, d):
+                            raise ValidationError(f"{self.name}: rendered curve self-intersects")
         if self.closed and self.area_mm2() == 0:
             raise ValidationError(f"{self.name}: zero-area contour is invalid")
 
@@ -219,7 +228,7 @@ class Pattern:
 def pattern_to_svg(pattern: Pattern) -> str:
     """Export an inspection SVG in mm units; this is not Phase 5 manufacturing sign-off."""
     pattern.validate_closed_contours()
-    all_points = [p for piece in pattern.pieces for contour in piece.contours for p in contour.points]
+    all_points = [point for piece in pattern.pieces for contour in piece.contours for point in contour._sampled_points()]
     min_x = min((p.x for p in all_points), default=Decimal(0))
     min_y = min((p.y for p in all_points), default=Decimal(0))
     max_x = max((p.x for p in all_points), default=Decimal(1))
