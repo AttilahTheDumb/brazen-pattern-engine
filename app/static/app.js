@@ -69,5 +69,5 @@
   $('#study-file').addEventListener('change', (event) => parseFile(event.target, (data) => { state.study = data; setResult('#study-result', 'Study loaded locally. Enter an approved max inter-TEM policy, then analyse.'); }));
   $('#download-svg').addEventListener('click', () => { if (!state.svg) return; const blob = new Blob([state.svg], { type: 'image/svg+xml' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'brazen-inspection.svg'; link.click(); URL.revokeObjectURL(link.href); });
   document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); $('#view-title').focus?.(); toast('Use the navigation to inspect a workspace.'); } });
-  loadSample(false).catch(() => toast('Engine is offline. Start the local console server.'));
+  loadSample(false).catch(() => { $('#connection-status').innerHTML = '<span class="signal-dot amber-dot"></span>API offline'; toast('API offline. Deploy the Render service, then connect the API token.'); });
 })();
