@@ -19,7 +19,7 @@ MAX_BODY = 2 * 1024 * 1024
 sys.path.insert(0, str(ROOT / "src"))
 from brazen_pattern_engine.cli import _pattern  # noqa: E402
 from brazen_pattern_engine.constraints import evaluate_constraints
-from brazen_pattern_engine.design_ops import apply_seam_allowance, compare_patterns, grade_pattern, pattern_to_dxf
+from brazen_pattern_engine.design_ops import apply_seam_allowance, compare_patterns, grade_pattern, pattern_to_dxf, smooth_contour
 from brazen_pattern_engine.errors import BrazenError  # noqa: E402
 from brazen_pattern_engine.fit_corrections import is_trainable_correction, validate_fit_correction  # noqa: E402
 from brazen_pattern_engine.geometry import pattern_to_svg  # noqa: E402
@@ -61,8 +61,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def authorised(self) -> bool:
         secret = os.environ.get("BRAZEN_API_SECRET", "")
-        if not secret or self.path == "/api/health":
+        if self.path == "/api/health":
             return True
+        if not secret:
+            bound_host = str(self.server.server_address[0])
+            return bound_host in {"127.0.0.1", "::1", "localhost"}
         return self.headers.get("Authorization", "") == f"Bearer {secret}"
 
     def send_file(self, path: Path) -> None:
@@ -150,6 +153,10 @@ class Handler(BaseHTTPRequestHandler):
                 pattern = grade_pattern(_pattern(payload["pattern"]), payload.get("increments", {}))
                 self.send_json(response_payload("PASS", pattern=pattern.to_dict(), svg=pattern_to_svg(pattern), patternHash=pattern.content_hash(), operation="grade"))
                 return
+            if route == "/api/design/smooth":
+                pattern = smooth_contour(_pattern(payload["pattern"]), piece_id=str(payload["pieceId"]), contour_name=str(payload["contour"]), tension=float(payload.get("tension", 0.25)))
+                self.send_json(response_payload("PASS", pattern=pattern.to_dict(), svg=pattern_to_svg(pattern), patternHash=pattern.content_hash(), operation="smooth"))
+                return
             if route == "/api/design/compare":
                 report = compare_patterns(_pattern(payload["reference"]), _pattern(payload["candidate"]), tolerance_mm=float(payload.get("toleranceMm", 0.1)))
                 self.send_json(response_payload(str(report["status"]), report=report, operation="compare"))
@@ -182,6 +189,8 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     port = int(os.environ.get("PORT", os.environ.get("BRAZEN_PORT", "8787")))
     host = os.environ.get("BRAZEN_HOST", "0.0.0.0" if os.environ.get("PORT") else "127.0.0.1")
+    if host not in {"127.0.0.1", "::1", "localhost"} and not os.environ.get("BRAZEN_API_SECRET"):
+        raise SystemExit("BRAZEN_API_SECRET is required when binding the API beyond loopback")
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"Brazen console listening at http://{host}:{port}", flush=True)
     try:

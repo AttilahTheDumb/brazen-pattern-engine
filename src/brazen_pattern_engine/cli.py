@@ -26,7 +26,10 @@ def _pattern(data: dict) -> Pattern:
             closed = c.get("closed", True)
             if not isinstance(closed, bool):
                 raise ValueError(f"{c.get('name', '<unnamed>')}: closed must be boolean")
-            parsed_contours.append(Polyline(c["name"], tuple(Point(x["xMm"], x["yMm"]) for x in c["points"]), closed))
+            parsed_points = tuple(Point(x["xMm"], x["yMm"]) for x in c["points"])
+            raw_controls = c.get("controls", [])
+            controls = tuple((Point(item["in"]["xMm"], item["in"]["yMm"]) if item.get("in") else None, Point(item["out"]["xMm"], item["out"]["yMm"]) if item.get("out") else None) for item in raw_controls) if raw_controls else ()
+            parsed_contours.append(Polyline(c["name"], parsed_points, closed, controls))
         contours = tuple(parsed_contours)
         pieces.append(PatternPiece(p["pieceId"], p["blockVersion"], contours, p.get("seamGroups", {})))
     return Pattern(data["compilerVersion"], tuple(pieces), data.get("sourceSpecVersion", "0.1"))

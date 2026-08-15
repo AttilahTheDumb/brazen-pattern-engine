@@ -12,6 +12,10 @@ def test_pattern_studio_exposes_real_authoring_surface():
     assert 'id="pattern-canvas"' in html
     assert 'data-editor-action="new-piece"' in html
     assert 'data-editor-action="save-project"' in html
+    assert 'data-editor-action="download-project"' in html
+    assert 'data-editor-action="seam-allowance"' in html
+    assert 'data-editor-action="smooth"' in html
+    assert 'data-editor-action="constraints"' in html
     assert 'pointerdown' in js
     assert 'localStorage' in js
     assert 'download-project' in js

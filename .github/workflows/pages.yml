@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir -p _site/static
           cp app/static/index.html _site/index.html
-          cp app/static/styles.css app/static/app.js app/static/repeatability-study.template.json app/static/synthetic-subject-178cm-101cm.json app/static/synthetic-repeatability-178cm-101cm-6-subjects.json app/static/valid-synthetic-study-178cm-101cm.json _site/static/
+          cp app/static/styles.css app/static/app.js app/static/repeatability-study.template.json app/static/synthetic-subject-178cm-101cm.json app/static/synthetic-repeatability-178cm-101cm-6-subjects.json app/static/valid-synthetic-study-178cm-101cm.json app/static/synthetic-pattern-studio-fixture.json _site/static/
           printf '%s\n' '// Generated for GitHub Pages. The API token is entered per browser session.' 'window.BRAZEN_API_BASE = "https://brazen-pattern-engine-api.onrender.com";' > _site/static/config.js
           touch _site/.nojekyll
       - name: Configure Pages

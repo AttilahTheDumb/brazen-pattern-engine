@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "0.1",
+  "datasetType": "synthetic-pattern-studio-fixture",
+  "provenance": {
+    "status": "synthetic",
+    "purpose": "software workflow test only",
+    "notEvidence": true
+  },
+  "targetProfile": {
+    "statureMm": 1780.0,
+    "chestGirthMm": 1010.0,
+    "description": "Illustrative average profile; not measured evidence."
+  },
+  "projectName": "Synthetic studio fixture / 178-101",
+  "sourceSpecVersion": "0.1",
+  "compilerVersion": "compiler-v0.1",
+  "pieces": [
+    {
+      "pieceId": "synthetic-front",
+      "blockVersion": "synthetic-draft-0.1",
+      "contours": [
+        {
+          "name": "outer",
+          "closed": true,
+          "points": [
+            {
+              "xMm": 0,
+              "yMm": 0
+            },
+            {
+              "xMm": 220,
+              "yMm": 0
+            },
+            {
+              "xMm": 238,
+              "yMm": 38
+            },
+            {
+              "xMm": 230,
+              "yMm": 210
+            },
+            {
+              "xMm": 180,
+              "yMm": 300
+            },
+            {
+              "xMm": 0,
+              "yMm": 300
+            }
+          ]
+        }
+      ],
+      "seamGroups": {}
+    },
+    {
+      "pieceId": "synthetic-back",
+      "blockVersion": "synthetic-draft-0.1",
+      "contours": [
+        {
+          "name": "outer",
+          "closed": true,
+          "points": [
+            {
+              "xMm": 280,
+              "yMm": 0
+            },
+            {
+              "xMm": 500,
+              "yMm": 0
+            },
+            {
+              "xMm": 518,
+              "yMm": 38
+            },
+            {
+              "xMm": 510,
+              "yMm": 210
+            },
+            {
+              "xMm": 460,
+              "yMm": 300
+            },
+            {
+              "xMm": 280,
+              "yMm": 300
+            }
+          ]
+        }
+      ],
+      "seamGroups": {}
+    }
+  ]
+}

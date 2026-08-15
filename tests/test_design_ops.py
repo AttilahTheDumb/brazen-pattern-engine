@@ -1,5 +1,5 @@
 from brazen_pattern_engine.cli import _pattern
-from brazen_pattern_engine.design_ops import apply_seam_allowance, compare_patterns, grade_pattern, pattern_to_dxf
+from brazen_pattern_engine.design_ops import apply_seam_allowance, compare_patterns, grade_pattern, pattern_to_dxf, smooth_contour
 
 
 def rectangle(width=100, height=200):
@@ -34,3 +34,10 @@ def test_dxf_export_is_explicitly_inspection_only():
     dxf = pattern_to_dxf(rectangle())
     assert "INSPECTION ONLY" in dxf
     assert "POLYLINE" in dxf and "VERTEX" in dxf
+
+
+def test_smooth_contour_adds_cubic_handles_and_svg_curve_commands():
+    result = smooth_contour(rectangle(), piece_id="front", contour_name="outer", tension=0.25)
+    contour = result.pieces[0].contours[0]
+    assert len(contour.controls) == 4
+    assert any(handle is not None for pair in contour.controls for handle in pair)

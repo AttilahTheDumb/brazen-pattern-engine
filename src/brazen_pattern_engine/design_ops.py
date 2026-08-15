@@ -26,6 +26,8 @@ def _line_intersection(a: tuple[float, float], b: tuple[float, float], c: tuple[
 def _offset_contour(contour: Polyline, allowance_mm: float) -> Polyline:
     if not contour.closed:
         raise GateFailure(f"{contour.name}: seam allowance requires a closed contour")
+    if contour.controls and any(in_handle or out_handle for in_handle, out_handle in contour.controls):
+        raise GateFailure(f"{contour.name}: curve-preserving seam allowance is not available; flatten or use a straight contour")
     if allowance_mm <= 0:
         raise ValidationError("seam allowance must be > 0")
     points = [(float(point.x), float(point.y)) for point in contour.points]
@@ -67,8 +69,42 @@ def grade_pattern(pattern: Pattern, increments: Mapping[str, Mapping[str, float]
         dx, dy = float(rule.get("xMm", 0)), float(rule.get("yMm", 0))
         if not all(map(lambda value: abs(value) < 1e6, (dx, dy))):
             raise ValidationError(f"{piece.piece_id}: grading increment is out of bounds")
-        contours = tuple(Polyline(contour.name, tuple(Point(float(point.x) + dx, float(point.y) + dy) for point in contour.points), contour.closed) for contour in piece.contours)
-        updated.append(replace(piece, contours=contours))
+        contours = []
+        for contour in piece.contours:
+            translated = tuple(Point(float(point.x) + dx, float(point.y) + dy) for point in contour.points)
+            controls = tuple((Point(float(in_handle.x) + dx, float(in_handle.y) + dy) if in_handle else None, Point(float(out_handle.x) + dx, float(out_handle.y) + dy) if out_handle else None) for in_handle, out_handle in contour.controls) if contour.controls else ()
+            contours.append(Polyline(contour.name, translated, contour.closed, controls))
+        updated.append(replace(piece, contours=tuple(contours)))
+    return replace(pattern, pieces=tuple(updated))
+
+
+def smooth_contour(pattern: Pattern, *, piece_id: str, contour_name: str, tension: float = 0.25) -> Pattern:
+    """Add deterministic cubic Bézier handles to one closed contour."""
+    if not 0 < tension <= 1:
+        raise ValidationError("curve tension must be > 0 and <= 1")
+    updated: list[PatternPiece] = []
+    found = False
+    for piece in pattern.pieces:
+        contours: list[Polyline] = []
+        for contour in piece.contours:
+            if piece.piece_id != piece_id or contour.name != contour_name:
+                contours.append(contour)
+                continue
+            if not contour.closed:
+                raise GateFailure(f"{piece_id}/{contour_name}: smoothing requires a closed contour")
+            found = True
+            points = contour.points
+            controls: list[tuple[Point, Point]] = []
+            for index, point in enumerate(points):
+                previous = points[(index - 1) % len(points)]
+                following = points[(index + 1) % len(points)]
+                dx = (float(following.x) - float(previous.x)) * tension
+                dy = (float(following.y) - float(previous.y)) * tension
+                controls.append((Point(float(point.x) - dx, float(point.y) - dy), Point(float(point.x) + dx, float(point.y) + dy)))
+            contours.append(replace(contour, controls=tuple(controls)))
+        updated.append(replace(piece, contours=tuple(contours)))
+    if not found:
+        raise ValidationError(f"contour not found: {piece_id}/{contour_name}")
     return replace(pattern, pieces=tuple(updated))
 
 
@@ -99,13 +135,14 @@ def compare_patterns(reference: Pattern, candidate: Pattern, *, tolerance_mm: fl
 def pattern_to_dxf(pattern: Pattern) -> str:
     """Emit a deterministic R12-style polyline file labelled inspection-only."""
     pattern.validate_closed_contours()
-    lines = ["0", "SECTION", "2", "HEADER", "9", "$COMMENT", "1", "BRAZEN INSPECTION ONLY - NOT MANUFACTURING APPROVAL", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES"]
+    lines = ["0", "SECTION", "2", "HEADER", "9", "$COMMENT", "1", "BRAZEN INSPECTION ONLY - NOT MANUFACTURING APPROVAL; CURVES FLATTENED TO POLYLINE", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES"]
     for piece in sorted(pattern.pieces, key=lambda item: item.piece_id):
         for contour in sorted(piece.contours, key=lambda item: item.name):
             lines += ["0", "POLYLINE", "8", piece.piece_id, "66", "1", "70", "1"]
-            for point in contour.points:
+            export_points = contour._sampled_points()
+            for point in export_points:
                 lines += ["0", "VERTEX", "8", piece.piece_id, "10", f"{float(point.x):.1f}", "20", f"{float(point.y):.1f}", "30", "0.0"]
-            first = contour.points[0]
+            first = export_points[0]
             lines += ["0", "VERTEX", "8", piece.piece_id, "10", f"{float(first.x):.1f}", "20", f"{float(first.y):.1f}", "30", "0.0", "0", "SEQEND"]
     lines += ["0", "ENDSEC", "0", "EOF", ""]
     return "\n".join(lines)

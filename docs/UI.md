@@ -22,7 +22,7 @@ The server binds to `127.0.0.1` by default and has no authentication or public e
 
 - **Overview** — readiness ledger, software/physical gate state, local engine signal.
 - **Pattern Studio** — draw explicit polygonal pattern pieces on a millimetre grid, move points, close contours, add pieces/contours, undo/redo, save/load local project JSON, and validate/hash authored geometry through the engine. This is software authoring and inspection, not fit or manufacturing approval.
-- **Design operations** — apply deterministic seam allowance offsets, explicit grading translations, dimensional constraints, reference comparison and inspection-only DXF-style export. These operations do not infer drafting rules or manufacturing approval.
+- **Design operations** — apply deterministic cubic curve handles, seam allowance offsets, explicit grading translations, dimensional constraints, reference comparison and inspection-only DXF-style export. These operations do not infer drafting rules or manufacturing approval.
 - **Measurement floor** — load a study JSON, supply the approved low-TEM policy, and run the real repeatability engine.
 - **Fit corrections** — load or use the sample record and run the real fail-closed validator.
 - **Reference block** — load a digitised hand-drafted block, validate closed geometry and hash it; no sample geometry is loaded and no fit claim is emitted.

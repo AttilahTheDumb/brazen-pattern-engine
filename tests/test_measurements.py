@@ -84,6 +84,15 @@ def test_primary_classification_requires_an_explicit_low_tem_policy():
         tolerance_budget_from_study(study)
 
 
+def test_synthetic_sessions_cannot_produce_primary_or_tolerance_budget():
+    sessions = tuple(MeasurementSession(
+        session.session_id, session.subject_id, session.measurer_id, session.created_at,
+        {**session.conditions, "synthetic": True}, session.values_mm, session.landmarks_confirmed, session.notes,
+    ) for session in make_study().sessions)
+    with pytest.raises(ValidationError, match="synthetic"):
+        RepeatabilityStudy(sessions)
+
+
 def test_study_requires_minimum_design():
     session = MeasurementSession("S1", "subject-001", "M1", "2026-08-15T10:00:00Z", {}, {"G_CHEST": 900}, landmarks_confirmed=True)
     with pytest.raises(ValidationError, match="at least 6 subjects"):

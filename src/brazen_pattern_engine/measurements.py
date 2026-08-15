@@ -156,6 +156,8 @@ class RepeatabilityStudy:
     sessions: tuple[MeasurementSession, ...]
 
     def __post_init__(self) -> None:
+        if any(session.conditions.get("synthetic") is True for session in self.sessions):
+            raise ValidationError("synthetic sessions cannot enter repeatability evidence or tolerance budgeting")
         if len({s.subject_id for s in self.sessions}) < 6:
             raise ValidationError("repeatability study requires at least 6 subjects")
         if len({s.session_id for s in self.sessions}) != len(self.sessions):

@@ -67,6 +67,7 @@ class Polyline:
     name: str
     points: tuple[Point, ...]
     closed: bool = True
+    controls: tuple[tuple[Point | None, Point | None], ...] = ()
 
     def __post_init__(self) -> None:
         if not self.name:
@@ -77,6 +78,8 @@ class Polyline:
             raise ValidationError(f"{self.name}: consecutive duplicate points are invalid")
         if self.closed and self.points[0] == self.points[-1]:
             raise ValidationError(f"{self.name}: duplicate closing vertex is invalid")
+        if self.controls and len(self.controls) != len(self.points):
+            raise ValidationError(f"{self.name}: controls must match point count")
         if self.closed:
             edges = list(zip(self.points, self.points[1:] + (self.points[0],)))
             for first, (a, b) in enumerate(edges):
@@ -88,13 +91,42 @@ class Polyline:
         if self.closed and self.area_mm2() == 0:
             raise ValidationError(f"{self.name}: zero-area contour is invalid")
 
+    def _sampled_points(self, samples: int = 12) -> tuple[Point, ...]:
+        if not self.controls or not any(in_handle or out_handle for in_handle, out_handle in self.controls):
+            return self.points
+        sampled: list[Point] = []
+        segment_count = len(self.points) if self.closed else len(self.points) - 1
+        for index in range(segment_count):
+            start = self.points[index]
+            end = self.points[(index + 1) % len(self.points)]
+            out_handle = self.controls[index][1]
+            in_handle = self.controls[(index + 1) % len(self.points)][0]
+            for step in range(samples):
+                t = step / samples
+                if out_handle is None and in_handle is None:
+                    x = float(start.x) + (float(end.x) - float(start.x)) * t
+                    y = float(start.y) + (float(end.y) - float(start.y)) * t
+                else:
+                    c1 = out_handle or start; c2 = in_handle or end
+                    u = 1 - t
+                    x = u**3 * float(start.x) + 3 * u**2 * t * float(c1.x) + 3 * u * t**2 * float(c2.x) + t**3 * float(end.x)
+                    y = u**3 * float(start.y) + 3 * u**2 * t * float(c1.y) + 3 * u * t**2 * float(c2.y) + t**3 * float(end.y)
+                sampled.append(Point(round(x, 4), round(y, 4)))
+        if not self.closed:
+            sampled.append(self.points[-1])
+        return tuple(sampled)
+
     def area_mm2(self) -> Decimal:
-        points = self.points + ((self.points[0],) if self.closed else ())
+        points = self._sampled_points()
+        if not self.closed:
+            return Decimal(0)
+        points = points + (points[0],)
         area_ticks2 = sum((a.x_ticks * b.y_ticks - b.x_ticks * a.y_ticks for a, b in zip(points, points[1:])), 0)
         return Decimal(area_ticks2) / 200
 
     def length_mm(self) -> Decimal:
-        points = self.points + ((self.points[0],) if self.closed else ())
+        points = self._sampled_points()
+        points = points + ((points[0],) if self.closed else ())
         total = Decimal(0)
         for a, b in zip(points, points[1:]):
             dx, dy = b.x_ticks - a.x_ticks, b.y_ticks - a.y_ticks
@@ -102,7 +134,10 @@ class Polyline:
         return total
 
     def to_dict(self) -> dict[str, object]:
-        return {"name": self.name, "closed": self.closed, "points": [p.to_dict() for p in self.points]}
+        data: dict[str, object] = {"name": self.name, "closed": self.closed, "points": [p.to_dict() for p in self.points]}
+        if self.controls and any(in_handle or out_handle for in_handle, out_handle in self.controls):
+            data["controls"] = [{"in": in_handle.to_dict() if in_handle else None, "out": out_handle.to_dict() if out_handle else None} for in_handle, out_handle in self.controls]
+        return data
 
 
 @dataclass(frozen=True)
@@ -194,9 +229,23 @@ def pattern_to_svg(pattern: Pattern) -> str:
     paths = []
     for piece in sorted(pattern.pieces, key=lambda p: p.piece_id):
         for contour in sorted(piece.contours, key=lambda c: c.name):
-            commands = " ".join(([f"M {contour.points[0].x:.1f} {contour.points[0].y:.1f}"] + [f"L {p.x:.1f} {p.y:.1f}" for p in contour.points[1:]] + (["Z"] if contour.closed else [])))
+            commands = [f"M {contour.points[0].x:.1f} {contour.points[0].y:.1f}"]
+            segment_count = len(contour.points) if contour.closed else len(contour.points) - 1
+            for index in range(segment_count):
+                end_index = (index + 1) % len(contour.points)
+                end = contour.points[end_index]
+                out_handle = contour.controls[index][1] if contour.controls else None
+                in_handle = contour.controls[end_index][0] if contour.controls else None
+                if out_handle or in_handle:
+                    c1, c2 = out_handle or contour.points[index], in_handle or end
+                    commands.append(f"C {c1.x:.1f} {c1.y:.1f} {c2.x:.1f} {c2.y:.1f} {end.x:.1f} {end.y:.1f}")
+                else:
+                    commands.append(f"L {end.x:.1f} {end.y:.1f}")
+            if contour.closed:
+                commands.append("Z")
+            command_text = " ".join(commands)
             piece_id = escape(piece.piece_id, quote=True)
             contour_name = escape(contour.name, quote=True)
-            paths.append(f'<path data-piece="{piece_id}" data-contour="{contour_name}" d="{commands}" fill="none" stroke="black" stroke-width="0.2" />')
+            paths.append(f'<path data-piece="{piece_id}" data-contour="{contour_name}" d="{command_text}" fill="none" stroke="black" stroke-width="0.2" />')
     body = "\n  ".join(paths)
     return f'<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="{width:.1f}mm" height="{height:.1f}mm" viewBox="{min_x:.1f} {min_y:.1f} {width:.1f} {height:.1f}">\n  <metadata>Brazen inspection export; not Phase 5 manufacturing approval; compiler {escape(pattern.compiler_version)}; hash {pattern.content_hash()}</metadata>\n  {body}\n</svg>\n'
