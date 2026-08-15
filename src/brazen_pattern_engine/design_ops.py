@@ -78,6 +78,12 @@ def grade_pattern(pattern: Pattern, increments: Mapping[str, Mapping[str, float]
     return replace(pattern, pieces=tuple(updated))
 
 
+def grade_table(pattern: Pattern, sizes: Mapping[str, Mapping[str, Mapping[str, float]]]) -> dict[str, Pattern]:
+    if not isinstance(sizes, Mapping) or not sizes:
+        raise ValidationError("grade table requires at least one named size")
+    return {str(size): grade_pattern(pattern, rules) for size, rules in sorted(sizes.items())}
+
+
 def smooth_contour(pattern: Pattern, *, piece_id: str, contour_name: str, tension: float = 0.25) -> Pattern:
     """Add deterministic cubic Bézier handles to one closed contour."""
     if not 0 < tension <= 1:

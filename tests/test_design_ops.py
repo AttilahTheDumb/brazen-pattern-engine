@@ -1,5 +1,5 @@
 from brazen_pattern_engine.cli import _pattern
-from brazen_pattern_engine.design_ops import apply_seam_allowance, compare_patterns, grade_pattern, pattern_to_dxf, smooth_contour
+from brazen_pattern_engine.design_ops import apply_seam_allowance, compare_patterns, grade_pattern, grade_table, pattern_to_dxf, smooth_contour
 
 
 def rectangle(width=100, height=200):
@@ -22,6 +22,12 @@ def test_grading_applies_explicit_size_increment():
     result = grade_pattern(rectangle(), {"front": {"xMm": 5, "yMm": 8}})
     point = result.pieces[0].contours[0].points[1]
     assert (float(point.x), float(point.y)) == (105.0, 8.0)
+
+
+def test_grade_table_returns_deterministic_named_size_variants():
+    result = grade_table(rectangle(), {"S": {"front": {"xMm": -5, "yMm": -8}}, "L": {"front": {"xMm": 5, "yMm": 8}}})
+    assert set(result) == {"S", "L"}
+    assert float(result["L"].pieces[0].contours[0].points[1].x) == 105.0
 
 
 def test_compare_reports_zero_for_identical_patterns():

@@ -16,3 +16,9 @@ def test_dimension_constraint_fails_closed_when_outside_tolerance():
     result = evaluate_constraints(pattern(), [{"pieceId": "front", "contour": "outer", "fromIndex": 0, "toIndex": 1, "kind": "distance", "valueMm": 101, "toleranceMm": 0.1}])
     assert result["status"] == "FAIL"
     assert result["constraints"][0]["status"] == "FAIL"
+
+
+def test_dimension_constraint_can_bind_to_explicit_measurement_profile():
+    result = evaluate_constraints(pattern(), [{"pieceId": "front", "contour": "outer", "fromIndex": 0, "toIndex": 1, "kind": "distance", "measurementId": "G_CHEST", "toleranceMm": 0.1}], {"G_CHEST": 100})
+    assert result["status"] == "PASS"
+    assert result["constraints"][0]["source"] == "measurement:G_CHEST"

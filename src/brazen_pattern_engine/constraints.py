@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 from math import hypot
-from typing import Sequence
+from typing import Mapping, Sequence
 
 from .errors import ValidationError
 from .geometry import Pattern
 
 
-def evaluate_constraints(pattern: Pattern, constraints: Sequence[dict[str, object]]) -> dict[str, object]:
+def evaluate_constraints(pattern: Pattern, constraints: Sequence[dict[str, object]], measurement_values: Mapping[str, float] | None = None) -> dict[str, object]:
     if not isinstance(constraints, (list, tuple)):
         raise ValidationError("constraints must be an array")
     pieces = {piece.piece_id: piece for piece in pattern.pieces}
@@ -22,6 +22,13 @@ def evaluate_constraints(pattern: Pattern, constraints: Sequence[dict[str, objec
         from_index = constraint.get("fromIndex")
         to_index = constraint.get("toIndex")
         expected = constraint.get("valueMm")
+        measurement_id = constraint.get("measurementId")
+        source = "literal"
+        if measurement_id is not None:
+            if not isinstance(measurement_id, str) or not measurement_values or measurement_id not in measurement_values:
+                raise ValidationError(f"constraint {index}: measurement binding does not resolve")
+            expected = measurement_values[measurement_id]
+            source = f"measurement:{measurement_id}"
         tolerance = constraint.get("toleranceMm", 0.1)
         if not isinstance(piece_id, str) or not isinstance(contour_name, str) or not isinstance(kind, str):
             raise ValidationError(f"constraint {index}: pieceId, contour and kind are required strings")
@@ -39,5 +46,5 @@ def evaluate_constraints(pattern: Pattern, constraints: Sequence[dict[str, objec
         dx, dy = float(second.x - first.x), float(second.y - first.y)
         actual = hypot(dx, dy) if kind == "distance" else abs(dx if kind == "horizontal" else dy)
         delta = abs(actual - float(expected))
-        results.append({"index": index, "pieceId": piece_id, "contour": contour_name, "kind": kind, "actualMm": round(actual, 6), "expectedMm": float(expected), "toleranceMm": float(tolerance), "deltaMm": round(delta, 6), "status": "PASS" if delta <= float(tolerance) else "FAIL"})
+        results.append({"index": index, "pieceId": piece_id, "contour": contour_name, "kind": kind, "actualMm": round(actual, 6), "expectedMm": float(expected), "toleranceMm": float(tolerance), "deltaMm": round(delta, 6), "source": source, "status": "PASS" if delta <= float(tolerance) else "FAIL"})
     return {"status": "PASS" if all(item["status"] == "PASS" for item in results) else "FAIL", "constraints": results, "count": len(results)}
