@@ -146,7 +146,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(response_payload("PASS", patternHash=pattern.content_hash(), compilerVersion=pattern.compiler_version, svg=pattern_to_svg(pattern)))
                 return
             if route == "/api/design/seam-allowance":
-                pattern = apply_seam_allowance(_pattern(payload["pattern"]), allowance_mm=float(payload["allowanceMm"]))
+                pattern = apply_seam_allowance(_pattern(payload["pattern"]), allowance_mm=float(payload["allowanceMm"]), flatten_tolerance_mm=float(payload.get("flattenToleranceMm", 0.1)), max_segments=int(payload.get("maxSegments", 1024)))
                 self.send_json(response_payload("PASS", pattern=pattern.to_dict(), svg=pattern_to_svg(pattern), patternHash=pattern.content_hash(), operation="seam-allowance"))
                 return
             if route == "/api/design/grade":

@@ -47,3 +47,10 @@ def test_smooth_contour_adds_cubic_handles_and_svg_curve_commands():
     contour = result.pieces[0].contours[0]
     assert len(contour.controls) == 4
     assert any(handle is not None for pair in contour.controls for handle in pair)
+
+
+def test_seam_allowance_flattens_curves_deterministically_when_requested():
+    curved = smooth_contour(rectangle(), piece_id="front", contour_name="outer", tension=0.25)
+    result = apply_seam_allowance(curved, allowance_mm=10, flatten_tolerance_mm=0.1, max_segments=256)
+    assert result.pieces[0].contours[0].controls == ()
+    assert len(result.pieces[0].contours[0].points) > 4

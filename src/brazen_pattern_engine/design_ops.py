@@ -23,14 +23,16 @@ def _line_intersection(a: tuple[float, float], b: tuple[float, float], c: tuple[
     return ((det1 * (x3 - x4) - (x1 - x2) * det2) / den, (det1 * (y3 - y4) - (y1 - y2) * det2) / den)
 
 
-def _offset_contour(contour: Polyline, allowance_mm: float) -> Polyline:
+def _offset_contour(contour: Polyline, allowance_mm: float, *, flatten_tolerance_mm: float, max_segments: int) -> Polyline:
     if not contour.closed:
         raise GateFailure(f"{contour.name}: seam allowance requires a closed contour")
-    if contour.controls and any(in_handle or out_handle for in_handle, out_handle in contour.controls):
-        raise GateFailure(f"{contour.name}: curve-preserving seam allowance is not available; flatten or use a straight contour")
     if allowance_mm <= 0:
         raise ValidationError("seam allowance must be > 0")
-    points = [(float(point.x), float(point.y)) for point in contour.points]
+    if flatten_tolerance_mm <= 0 or max_segments < 4:
+        raise ValidationError("flatten tolerance must be > 0 and max_segments must be >= 4")
+    samples_per_edge = max(4, min(256, max_segments // max(1, len(contour.points))))
+    source_points = contour._sampled_points(samples=samples_per_edge) if contour.controls else contour.points
+    points = [(float(point.x), float(point.y)) for point in source_points]
     area = float(contour.area_mm2())
     outward_sign = 1.0 if area > 0 else -1.0
     lines: list[tuple[tuple[float, float], tuple[float, float]]] = []
@@ -52,11 +54,11 @@ def _offset_contour(contour: Polyline, allowance_mm: float) -> Polyline:
     return Polyline(contour.name, tuple(result), True)
 
 
-def apply_seam_allowance(pattern: Pattern, *, allowance_mm: float, contour_names: set[str] | None = None) -> Pattern:
+def apply_seam_allowance(pattern: Pattern, *, allowance_mm: float, contour_names: set[str] | None = None, flatten_tolerance_mm: float = 0.1, max_segments: int = 1024) -> Pattern:
     """Return a deterministic inspection pattern with an explicit seam offset."""
     contours: list[PatternPiece] = []
     for piece in pattern.pieces:
-        updated = tuple(_offset_contour(contour, allowance_mm) if contour_names is None or contour.name in contour_names else contour for contour in piece.contours)
+        updated = tuple(_offset_contour(contour, allowance_mm, flatten_tolerance_mm=flatten_tolerance_mm, max_segments=max_segments) if contour_names is None or contour.name in contour_names else contour for contour in piece.contours)
         contours.append(replace(piece, contours=updated))
     return replace(pattern, pieces=tuple(contours))
 
