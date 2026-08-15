@@ -5,7 +5,7 @@ This file records reproducible local verification, not physical-fit approval.
 ## Build checks
 
 - `python -m pip install -e .` — PASS
-- `python -m pytest` — PASS (41 tests)
+- `python -m pytest` — PASS (43 tests)
 - `python -m compileall -q src tests app` — PASS
 - Local console server on `127.0.0.1:8788` — PASS
 - `/api/health` and static HTML/CSS/JS delivery — PASS
