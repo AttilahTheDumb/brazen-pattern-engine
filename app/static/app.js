@@ -49,8 +49,10 @@
   }
   async function runStudy() {
     if (!state.study) { setResult('#study-result', 'No study loaded. Select a JSON file first.', 'fail'); return; }
-    const policy = Number($('#tem-policy').value || 0);
-    try { const result = await api('/api/repeatability', { method: 'POST', body: JSON.stringify({ sessions: state.study.sessions || state.study, maxRelativeTemPct: policy || null }) }); setResult('#study-result', pretty(result), result.status === 'PASS' ? 'pass' : 'fail'); toast('Repeatability analysis completed locally.'); } catch (error) { setResult('#study-result', error.message, 'fail'); }
+    const filePolicy = Number(state.study.maxRelativeTemPct || 0);
+    const policy = Number($('#tem-policy').value || filePolicy || 0);
+    if (!policy) { setResult('#study-result', 'No low-TEM policy supplied. Enter the approved max inter-measurer TEM percentage first.', 'fail'); return; }
+    try { const result = await api('/api/repeatability', { method: 'POST', body: JSON.stringify({ sessions: state.study.sessions || state.study, maxRelativeTemPct: policy }) }); setResult('#study-result', pretty(result), result.status === 'PASS' ? 'pass' : 'fail'); toast('Repeatability analysis completed locally.'); } catch (error) { setResult('#study-result', error.message.includes('no PRIMARY') ? `${error.message}\n\nThe study needs an explicit low-TEM policy. For the synthetic fixture, use 1.5%.` : error.message, 'fail'); }
   }
   $$('.nav-item').forEach((node) => node.addEventListener('click', () => switchView(node.dataset.view)));
   $$('[data-view-target]').forEach((node) => node.addEventListener('click', () => switchView(node.dataset.viewTarget)));
@@ -60,7 +62,7 @@
   $('[data-action="run-study"]').addEventListener('click', runStudy);
   $('#fit-file').addEventListener('change', (event) => parseFile(event.target, (data) => { state.fit = data; $('#correction-state').textContent = `${data.recordId || 'record'} / loaded`; setResult('#fit-result', 'Record loaded locally. Choose a floor, then validate.'); }));
   $('#pattern-file').addEventListener('change', (event) => parseFile(event.target, (data) => renderPattern(data)));
-  $('#study-file').addEventListener('change', (event) => parseFile(event.target, (data) => { state.study = data; setResult('#study-result', 'Study loaded locally. Enter an approved max inter-TEM policy, then analyse.'); }));
+  $('#study-file').addEventListener('change', (event) => parseFile(event.target, (data) => { state.study = data; const policy = Number(data.maxRelativeTemPct || 0); if (policy) $('#tem-policy').value = policy; setResult('#study-result', policy ? `Study loaded locally. Illustrative policy ${policy}% populated; review it before analysis.` : 'Study loaded locally. Enter an approved max inter-TEM policy, then analyse.'); }));
   $('#download-svg').addEventListener('click', () => { if (!state.svg) return; const blob = new Blob([state.svg], { type: 'image/svg+xml' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'brazen-inspection.svg'; link.click(); URL.revokeObjectURL(link.href); });
   document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); $('#view-title').focus?.(); toast('Use the navigation to inspect a workspace.'); } });
   checkHealth();
