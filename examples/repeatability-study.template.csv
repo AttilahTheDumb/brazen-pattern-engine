@@ -1,0 +1,25 @@
+sessionId,subjectId,measurerId,createdAt,landmarksConfirmed,reLandmarkingCompleted,STATURE,G_NECK,G_CHEST,G_SCYE,G_WAIST,G_HHIP,G_HIP,G_ARMSCYE_L,G_ARMSCYE_R,G_BICEP_L,G_BICEP_R,V_CB_WAIST,V_CF_WAIST,V_SCYE_DEPTH,V_NP_WAIST_F_L,V_NP_WAIST_F_R,V_NP_WAIST_B_L,V_NP_WAIST_B_R,V_SIDE,V_SHOULDER_DROP_L,V_SHOULDER_DROP_R,H_ACROSS_BACK,H_ACROSS_CHEST,H_SHOULDER_L,H_SHOULDER_R,notes
+session-001-M1-1,subject-001,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-001-M1-2,subject-001,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-001-M2-1,subject-001,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-001-M2-2,subject-001,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-002-M1-1,subject-002,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-002-M1-2,subject-002,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-002-M2-1,subject-002,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-002-M2-2,subject-002,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-003-M1-1,subject-003,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-003-M1-2,subject-003,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-003-M2-1,subject-003,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-003-M2-2,subject-003,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-004-M1-1,subject-004,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-004-M1-2,subject-004,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-004-M2-1,subject-004,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-004-M2-2,subject-004,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-005-M1-1,subject-005,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-005-M1-2,subject-005,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-005-M2-1,subject-005,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-005-M2-2,subject-005,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-006-M1-1,subject-006,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-006-M1-2,subject-006,measurer-001,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-006-M2-1,subject-006,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
+session-006-M2-2,subject-006,measurer-002,2026-08-15T09:00:00+00:00,FALSE,FALSE,,,,,,,,,,,,,,,,,,,,,,,,,,FILL: raw notes only; do not average or correct values.
