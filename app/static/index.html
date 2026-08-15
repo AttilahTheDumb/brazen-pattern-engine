@@ -18,6 +18,7 @@
       <div class="workspace-chip"><span class="signal-dot"></span><span>Local workspace</span><kbd>⌘ K</kbd></div>
       <nav class="nav-list" role="tablist" aria-label="Console views">
         <button class="nav-item active" role="tab" aria-selected="true" aria-controls="overview-view" data-view="overview"><span class="nav-glyph">◈</span>Overview</button>
+        <button class="nav-item" role="tab" aria-selected="false" aria-controls="editor-view" data-view="editor"><span class="nav-glyph">✦</span>Pattern Studio</button>
         <button class="nav-item" role="tab" aria-selected="false" aria-controls="measurements-view" data-view="measurements"><span class="nav-glyph">⌁</span>Measurement floor</button>
         <button class="nav-item" role="tab" aria-selected="false" aria-controls="corrections-view" data-view="corrections"><span class="nav-glyph">⊕</span>Fit corrections</button>
         <button class="nav-item" role="tab" aria-selected="false" aria-controls="geometry-view" data-view="geometry"><span class="nav-glyph">⌗</span>Reference block</button>
@@ -78,6 +79,23 @@
               <button class="text-action" data-view-target="measurements">Open measurement floor <span>→</span></button>
             </section>
           </div>
+        </section>
+
+        <section class="view" id="editor-view" role="tabpanel" aria-labelledby="editor-tab" hidden>
+          <div class="view-header editor-heading"><div><p class="eyebrow">AUTHOR / SOFTWARE GEOMETRY</p><h1>Pattern Studio<span class="accent-dot">.</span></h1><p class="lede">Draw and edit explicit pattern geometry in millimetres. Your project stays local until you choose to validate it through the deterministic engine.</p></div><div class="header-note"><span class="label">BOUNDARY</span><strong>Authoring / inspection only</strong><small>Fit, leather behaviour, DXF and manufacturing approval remain separate gates.</small></div></div>
+          <div class="editor-toolbar panel">
+            <div class="tool-group"><button class="tool-button active" data-editor-mode="select" title="Select and move points">↖ <span>Select</span></button><button class="tool-button" data-editor-mode="draw" title="Place points on the canvas">＋ <span>Draw points</span></button><button class="tool-button" data-editor-mode="pan" title="Pan the canvas">✥ <span>Pan</span></button></div>
+            <div class="tool-group"><button class="button ghost" data-editor-action="new-piece">New piece</button><button class="button ghost" data-editor-action="new-contour">New contour</button><button class="button ghost" data-editor-action="close-contour">Close contour</button></div>
+            <div class="tool-group tool-group-end"><button class="icon-button" data-editor-action="undo" title="Undo">↶</button><button class="icon-button" data-editor-action="redo" title="Redo">↷</button><button class="button ghost" data-editor-action="save-project">Save project</button><button class="button ghost" data-editor-action="load-project">Open JSON</button><button class="button primary" data-editor-action="download-project">Export JSON <span>↓</span></button><input id="editor-file" type="file" accept="application/json,.json" hidden></div>
+          </div>
+          <div class="editor-layout">
+            <section class="panel canvas-panel"><div class="canvas-head"><div><span class="label">WORKSPACE / MM</span><strong id="editor-status">New piece · draw points</strong></div><div class="canvas-actions"><button class="text-action" data-editor-action="fit-view">Fit view <span>⌘0</span></button><span id="editor-scale" class="mono-note">1 mm grid</span></div></div><div class="canvas-wrap"><canvas id="pattern-canvas" aria-label="Pattern drawing canvas"></canvas><div class="canvas-empty" id="canvas-empty"><strong>Start drawing a piece</strong><span>Choose Draw points, then click the canvas.</span></div></div><div class="canvas-foot"><span id="coordinate-readout">x — · y — mm</span><span id="point-count">0 points · 0 pieces</span></div></section>
+            <aside class="editor-inspector">
+              <section class="panel inspector-panel"><div class="panel-head"><div><h3>Project</h3><p>Explicit geometry, versioned locally.</p></div><span class="file-badge">JSON</span></div><label class="field-label" for="project-name">Project name</label><input id="project-name" class="text-input" value="Untitled pattern" autocomplete="off"><label class="field-label" for="piece-name">Piece ID</label><input id="piece-name" class="text-input" value="piece-01" autocomplete="off"><label class="field-label" for="block-version">Block version</label><input id="block-version" class="text-input" value="draft-0.1" autocomplete="off"><div class="inspector-rule"></div><div class="panel-head compact-head"><div><h3>Pieces</h3><p id="piece-summary">1 piece · 1 contour</p></div></div><div id="piece-list" class="piece-list"></div></section>
+              <section class="panel inspector-panel validation-panel"><div class="panel-head"><div><h3>Engine check</h3><p>Validate authored geometry through the real API.</p></div><span id="editor-validation-pill" class="status-pill neutral">NOT RUN</span></div><button class="button primary wide" data-editor-action="validate">Validate + hash <span>↗</span></button><div id="editor-result" class="result-box">No authored pattern validated.</div><button class="text-action" data-editor-action="clear-project">Clear local project <span>×</span></button></section>
+            </aside>
+          </div>
+          <div class="editor-disclosure"><span class="rule-icon amber">!</span><p><strong>This is real authoring, not manufacturing approval.</strong> Geometry is stored in integer tenths of a millimetre and can be validated/exported for inspection. No output here claims body fit, leather suitability, DXF readiness or production release.</p></div>
         </section>
 
         <section class="view" id="measurements-view" role="tabpanel" aria-labelledby="measurements-tab" hidden>

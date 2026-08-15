@@ -1,12 +1,26 @@
 (() => {
-  const state = { study: null, fit: null, pattern: null, svg: null };
   const API_BASE = String(window.BRAZEN_API_BASE || '').replace(/\/$/, '');
   let API_TOKEN = sessionStorage.getItem('brazen_api_token') || '';
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
+  const state = { study: null, fit: null, pattern: null, svg: null };
+  const editor = {
+    mode: 'select',
+    project: null,
+    history: [],
+    historyIndex: -1,
+    pieceIndex: 0,
+    contourIndex: 0,
+    pointIndex: null,
+    drag: null,
+    view: { scale: 2.2, ox: 80, oy: 70 },
+  };
+
   const toast = (message) => { const node = $('#toast'); node.textContent = message; node.classList.add('visible'); clearTimeout(toast.timer); toast.timer = setTimeout(() => node.classList.remove('visible'), 3200); };
   const setResult = (selector, message, kind = '') => { const node = $(selector); node.textContent = message; node.className = `result-box ${kind}`; };
   const pretty = (value) => JSON.stringify(value, null, 2);
+  const clone = (value) => JSON.parse(JSON.stringify(value));
+
   async function api(path, options = {}) {
     const headers = new Headers(options.headers || {}); headers.set('Content-Type', 'application/json'); if (API_TOKEN) headers.set('Authorization', `Bearer ${API_TOKEN}`);
     const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
@@ -16,20 +30,20 @@
     $('#connection-status').innerHTML = '<span class="signal-dot"></span>Engine online';
     return data;
   }
+
   function connectApi() {
     if (!API_BASE) { toast('Local mode is same-origin; no API token is required.'); return; }
     const token = window.prompt('Enter the Render API token for this browser session. It is kept in session memory only.');
     if (!token) return;
     API_TOKEN = token.trim(); sessionStorage.setItem('brazen_api_token', API_TOKEN); $('#connection-status').innerHTML = '<span class="signal-dot"></span>API connected'; toast('API token stored for this browser session.');
   }
-  async function checkHealth() {
-    try { await api('/api/health'); }
-    catch (error) { $('#connection-status').innerHTML = '<span class="signal-dot amber-dot"></span>API offline'; toast('API offline. Connect the protected API before running operations.'); }
-  }
+  async function checkHealth() { try { await api('/api/health'); } catch (error) { $('#connection-status').innerHTML = '<span class="signal-dot amber-dot"></span>API offline'; } }
+
   function switchView(view) {
     $$('.view').forEach((node) => { const active = node.id === `${view}-view`; node.hidden = !active; node.classList.toggle('active', active); });
     $$('.nav-item').forEach((node) => { const active = node.dataset.view === view; node.classList.toggle('active', active); node.setAttribute('aria-selected', active); });
-    $('#view-title').textContent = view === 'overview' ? 'Overview' : ({ measurements: 'Measurement floor', corrections: 'Fit corrections', geometry: 'Reference block' }[view] || view);
+    $('#view-title').textContent = view === 'overview' ? 'Overview' : ({ editor: 'Pattern Studio', measurements: 'Measurement floor', corrections: 'Fit corrections', geometry: 'Reference block' }[view] || view);
+    if (view === 'editor') { resizeCanvas(); renderEditor(); }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -37,33 +51,82 @@
     const file = input.files?.[0]; if (!file) return;
     const reader = new FileReader(); reader.onload = () => { try { callback(JSON.parse(reader.result)); toast(`${file.name} loaded locally.`); } catch (error) { toast(`Could not parse ${file.name}: ${error.message}`); } }; reader.readAsText(file);
   }
+
   async function runFit() {
     if (!state.fit) { setResult('#fit-result', 'No fit-correction record loaded. Upload a real record first.', 'fail'); return; }
     const floor = Number($('#fit-floor').value || 10);
-    try { const result = await api('/api/validate-fit', { method: 'POST', body: JSON.stringify({ record: state.fit, toleranceFitMm: floor }) }); setResult('#fit-result', pretty(result), result.status === 'PASS' ? 'pass' : 'fail'); $('#correction-state').textContent = `${state.fit.recordId} / ${result.trainable ? 'trainable' : 'retained only'}`; toast(result.status === 'PASS' ? 'Fit-correction gate passed.' : 'Fit-correction record retained with blockers.'); } catch (error) { setResult('#fit-result', error.message, 'fail'); }
+    try { const result = await api('/api/validate-fit', { method: 'POST', body: JSON.stringify({ record: state.fit, toleranceFitMm: floor }) }); setResult('#fit-result', pretty(result), result.status === 'PASS' ? 'pass' : 'fail'); $('#correction-state').textContent = `${state.fit.recordId} / ${result.trainable ? 'trainable' : 'retained only'}`; } catch (error) { setResult('#fit-result', error.message, 'fail'); }
   }
   function renderPattern(pattern) { if (!pattern) return; state.pattern = pattern; $('#hash-label').textContent = 'Reference loaded for inspection'; $('#geometry-result').textContent = 'Digitised reference loaded locally. Validate geometry and provenance.'; $('#download-svg').disabled = true; }
   async function runPattern() {
     if (!state.pattern) { setResult('#geometry-result', 'No digitised reference block loaded. Compilation is blocked until Phase 1 evidence exists.', 'fail'); return; }
-    try { const result = await api('/api/hash-pattern', { method: 'POST', body: JSON.stringify({ pattern: state.pattern }) }); state.svg = result.svg; $('#hash-label').textContent = result.patternHash; $('#geometry-result').textContent = `${result.status}\n${result.patternHash}\n\nInspection export only.`; $('#geometry-result').className = 'result-box pass'; $('#svg-preview').innerHTML = `<div class="preview-grid"></div>${result.svg}`; $('#download-svg').disabled = false; toast('Deterministic geometry hash verified.'); } catch (error) { setResult('#geometry-result', error.message, 'fail'); }
+    try { const result = await api('/api/hash-pattern', { method: 'POST', body: JSON.stringify({ pattern: state.pattern }) }); state.svg = result.svg; $('#hash-label').textContent = result.patternHash; $('#geometry-result').textContent = `${result.status}\n${result.patternHash}\n\nInspection export only.`; $('#geometry-result').className = 'result-box pass'; $('#svg-preview').innerHTML = `<div class="preview-grid"></div>${result.svg}`; $('#download-svg').disabled = false; } catch (error) { setResult('#geometry-result', error.message, 'fail'); }
   }
   async function runStudy() {
     if (!state.study) { setResult('#study-result', 'No study loaded. Select a JSON file first.', 'fail'); return; }
-    const filePolicy = Number(state.study.maxRelativeTemPct || 0);
-    const policy = Number($('#tem-policy').value || filePolicy || 0);
+    const filePolicy = Number(state.study.maxRelativeTemPct || 0); const policy = Number($('#tem-policy').value || filePolicy || 0);
     if (!policy) { setResult('#study-result', 'No low-TEM policy supplied. Enter the approved max inter-measurer TEM percentage first.', 'fail'); return; }
-    try { const result = await api('/api/repeatability', { method: 'POST', body: JSON.stringify({ sessions: state.study.sessions || state.study, maxRelativeTemPct: policy }) }); setResult('#study-result', pretty(result), result.status === 'PASS' ? 'pass' : 'fail'); toast('Repeatability analysis completed locally.'); } catch (error) { setResult('#study-result', error.message.includes('no PRIMARY') ? `${error.message}\n\nThe study needs an explicit low-TEM policy. For the synthetic fixture, use 1.5%.` : error.message, 'fail'); }
+    try { const result = await api('/api/repeatability', { method: 'POST', body: JSON.stringify({ sessions: state.study.sessions || state.study, maxRelativeTemPct: policy }) }); setResult('#study-result', pretty(result), result.status === 'PASS' ? 'pass' : 'fail'); } catch (error) { setResult('#study-result', error.message.includes('no PRIMARY') ? `${error.message}\n\nFor the synthetic fixture, use 1.5%.` : error.message, 'fail'); }
   }
+
+  function blankProject() {
+    return { sourceSpecVersion: '0.1', compilerVersion: 'compiler-v0.1', projectName: 'Untitled pattern', pieces: [{ pieceId: 'piece-01', blockVersion: 'draft-0.1', contours: [{ name: 'outer', closed: false, points: [] }], seamGroups: {} }] };
+  }
+  function currentPiece() { return editor.project.pieces[editor.pieceIndex]; }
+  function currentContour() { return currentPiece().contours[editor.contourIndex]; }
+  function normaliseProject(input) {
+    if (!input || !Array.isArray(input.pieces) || !input.pieces.length) throw new Error('Project needs at least one piece.');
+    const project = clone(input); project.sourceSpecVersion ||= '0.1'; project.compilerVersion ||= 'compiler-v0.1'; project.projectName ||= 'Untitled pattern';
+    project.pieces.forEach((piece, pi) => { if (!piece.pieceId) piece.pieceId = `piece-${String(pi + 1).padStart(2, '0')}`; piece.blockVersion ||= 'draft-0.1'; if (!Array.isArray(piece.contours) || !piece.contours.length) piece.contours = [{ name: 'outer', closed: false, points: [] }]; piece.contours.forEach((contour, ci) => { contour.name ||= ci === 0 ? 'outer' : `contour-${ci + 1}`; contour.closed = Boolean(contour.closed); contour.points = (contour.points || []).map((point) => ({ xMm: Number(point.xMm), yMm: Number(point.yMm) })); }); piece.seamGroups ||= {}; });
+    return project;
+  }
+  function snapshot() { return clone(editor.project); }
+  function commit() { editor.history = editor.history.slice(0, editor.historyIndex + 1); editor.history.push(snapshot()); editor.historyIndex += 1; renderEditor(); }
+  function loadEditorProject(input, announce = true) { editor.project = normaliseProject(input); editor.pieceIndex = 0; editor.contourIndex = 0; editor.pointIndex = null; editor.history = [snapshot()]; editor.historyIndex = 0; $('#project-name').value = editor.project.projectName; $('#piece-name').value = currentPiece().pieceId; $('#block-version').value = currentPiece().blockVersion; renderEditor(); if (announce) toast('Pattern project loaded locally.'); }
+  function undo() { if (editor.historyIndex <= 0) return; editor.historyIndex -= 1; editor.project = clone(editor.history[editor.historyIndex]); renderEditor(); }
+  function redo() { if (editor.historyIndex >= editor.history.length - 1) return; editor.historyIndex += 1; editor.project = clone(editor.history[editor.historyIndex]); renderEditor(); }
+  function saveProject() { editor.project.projectName = $('#project-name').value.trim() || 'Untitled pattern'; localStorage.setItem('brazen_pattern_project', JSON.stringify(editor.project)); toast('Project saved in this browser.'); }
+  function downloadProject() { saveProject(); const blob = new Blob([JSON.stringify(editor.project, null, 2)], { type: 'application/json' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${editor.project.projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'pattern-project'}.json`; link.click(); URL.revokeObjectURL(link.href); }
+  function setEditorMode(mode) { editor.mode = mode; $$('[data-editor-mode]').forEach((button) => button.classList.toggle('active', button.dataset.editorMode === mode)); $('#editor-status').textContent = mode === 'draw' ? `Drawing ${currentPiece().pieceId}/${currentContour().name}` : mode === 'pan' ? 'Pan canvas' : 'Select and move points'; }
+
+  function resizeCanvas() { const canvas = $('#pattern-canvas'); if (!canvas) return; const box = canvas.getBoundingClientRect(); const ratio = window.devicePixelRatio || 1; canvas.width = Math.max(1, Math.floor(box.width * ratio)); canvas.height = Math.max(1, Math.floor(box.height * ratio)); canvas.getContext('2d').setTransform(ratio, 0, 0, ratio, 0, 0); renderEditor(); }
+  function worldToScreen(point) { return { x: editor.view.ox + point.xMm * editor.view.scale, y: editor.view.oy + point.yMm * editor.view.scale }; }
+  function screenToWorld(event) { const rect = $('#pattern-canvas').getBoundingClientRect(); return { xMm: Math.round(((event.clientX - rect.left - editor.view.ox) / editor.view.scale) * 10) / 10, yMm: Math.round(((event.clientY - rect.top - editor.view.oy) / editor.view.scale) * 10) / 10 }; }
+  function drawGrid(ctx, width, height) { const step = editor.view.scale * 10; const originX = ((editor.view.ox % step) + step) % step; const originY = ((editor.view.oy % step) + step) % step; ctx.fillStyle = '#0d1210'; ctx.fillRect(0, 0, width, height); ctx.strokeStyle = 'rgba(185,215,127,.055)'; ctx.lineWidth = 1; for (let x = originX; x < width; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); } for (let y = originY; y < height; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); } const major = step * 10; ctx.strokeStyle = 'rgba(185,215,127,.12)'; for (let x = ((editor.view.ox % major) + major) % major; x < width; x += major) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); } for (let y = ((editor.view.oy % major) + major) % major; y < height; y += major) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); } }
+  function renderEditor() {
+    if (!editor.project || !$('#pattern-canvas')) return; const canvas = $('#pattern-canvas'); const rect = canvas.getBoundingClientRect(); const ctx = canvas.getContext('2d'); const width = rect.width; const height = rect.height; ctx.setTransform(1, 0, 0, 1, 0, 0); drawGrid(ctx, width, height); ctx.lineJoin = 'round';
+    let total = 0; editor.project.pieces.forEach((piece, pi) => piece.contours.forEach((contour, ci) => { total += contour.points.length; const active = pi === editor.pieceIndex && ci === editor.contourIndex; const points = contour.points.map(worldToScreen); if (points.length > 1) { ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y); points.slice(1).forEach((p) => ctx.lineTo(p.x, p.y)); if (contour.closed) ctx.closePath(); ctx.strokeStyle = active ? '#d7ef9c' : '#738d71'; ctx.lineWidth = active ? 2 : 1.2; ctx.setLineDash(contour.closed ? [] : [6, 5]); ctx.stroke(); if (contour.closed) { ctx.fillStyle = active ? 'rgba(185,215,127,.07)' : 'rgba(120,145,113,.035)'; ctx.fill(); } ctx.setLineDash([]); } points.forEach((p, index) => { ctx.beginPath(); ctx.arc(p.x, p.y, active && index === editor.pointIndex ? 6 : 4, 0, Math.PI * 2); ctx.fillStyle = active && index === editor.pointIndex ? '#f0c77b' : '#d7ef9c'; ctx.fill(); ctx.strokeStyle = '#0d1210'; ctx.lineWidth = 2; ctx.stroke(); }); }));
+    $('#canvas-empty').classList.toggle('hidden', total > 0); $('#point-count').textContent = `${total} points · ${editor.project.pieces.length} piece${editor.project.pieces.length === 1 ? '' : 's'}`; $('#piece-summary').textContent = `${editor.project.pieces.length} piece${editor.project.pieces.length === 1 ? '' : 's'} · ${editor.project.pieces.reduce((sum, p) => sum + p.contours.length, 0)} contour${editor.project.pieces.reduce((sum, p) => sum + p.contours.length, 0) === 1 ? '' : 's'}`; $('#editor-scale').textContent = `${editor.view.scale.toFixed(1)} px/mm`;
+    renderPieceList();
+  }
+  function renderPieceList() { const list = $('#piece-list'); list.innerHTML = ''; editor.project.pieces.forEach((piece, pi) => piece.contours.forEach((contour, ci) => { const button = document.createElement('button'); button.className = `piece-row ${pi === editor.pieceIndex && ci === editor.contourIndex ? 'active' : ''}`; button.innerHTML = `<span class="piece-index">${String(pi + 1).padStart(2, '0')}</span><span><strong>${piece.pieceId}</strong><small>${contour.name} · ${contour.points.length} points · ${contour.closed ? 'closed' : 'open'}</small></span>`; button.addEventListener('click', () => { editor.pieceIndex = pi; editor.contourIndex = ci; editor.pointIndex = null; $('#piece-name').value = piece.pieceId; $('#block-version').value = piece.blockVersion; setEditorMode('select'); renderEditor(); }); list.appendChild(button); })); }
+  function nearestPoint(event) { const world = screenToWorld(event); let best = null; editor.project.pieces.forEach((piece, pi) => piece.contours.forEach((contour, ci) => contour.points.forEach((point, index) => { const screen = worldToScreen(point); const rect = $('#pattern-canvas').getBoundingClientRect(); const dx = screen.x - (event.clientX - rect.left); const dy = screen.y - (event.clientY - rect.top); const distance = Math.hypot(dx, dy); if (distance < 14 && (!best || distance < best.distance)) best = { pi, ci, index, distance }; }))); return best; }
+  function closeContour() { const contour = currentContour(); if (contour.points.length < 3) { toast('A closed contour needs at least 3 points.'); return; } if (!contour.closed) { contour.closed = true; commit(); toast('Contour closed.'); } }
+  function newPiece() { editor.project.pieces.push({ pieceId: `piece-${String(editor.project.pieces.length + 1).padStart(2, '0')}`, blockVersion: $('#block-version').value || 'draft-0.1', contours: [{ name: 'outer', closed: false, points: [] }], seamGroups: {} }); editor.pieceIndex = editor.project.pieces.length - 1; editor.contourIndex = 0; editor.pointIndex = null; commit(); $('#piece-name').value = currentPiece().pieceId; toast('New piece created.'); }
+  function newContour() { const piece = currentPiece(); piece.contours.push({ name: `contour-${piece.contours.length + 1}`, closed: false, points: [] }); editor.contourIndex = piece.contours.length - 1; editor.pointIndex = null; commit(); toast('New contour created.'); }
+  function fitView() { const points = editor.project.pieces.flatMap((piece) => piece.contours.flatMap((contour) => contour.points)); if (!points.length) { editor.view = { scale: 2.2, ox: 80, oy: 70 }; renderEditor(); return; } const canvas = $('#pattern-canvas').getBoundingClientRect(); const minX = Math.min(...points.map((p) => p.xMm)); const maxX = Math.max(...points.map((p) => p.xMm)); const minY = Math.min(...points.map((p) => p.yMm)); const maxY = Math.max(...points.map((p) => p.yMm)); editor.view.scale = Math.max(0.35, Math.min(8, Math.min((canvas.width - 100) / Math.max(40, maxX - minX), (canvas.height - 100) / Math.max(40, maxY - minY)))); editor.view.ox = (canvas.width - (maxX - minX) * editor.view.scale) / 2 - minX * editor.view.scale; editor.view.oy = (canvas.height - (maxY - minY) * editor.view.scale) / 2 - minY * editor.view.scale; renderEditor(); }
+  function updatePieceMeta() { currentPiece().pieceId = $('#piece-name').value.trim() || 'piece-01'; currentPiece().blockVersion = $('#block-version').value.trim() || 'draft-0.1'; editor.project.projectName = $('#project-name').value.trim() || 'Untitled pattern'; renderPieceList(); }
+  async function validateEditor() { try { editor.project.projectName = $('#project-name').value.trim() || 'Untitled pattern'; const result = await api('/api/hash-pattern', { method: 'POST', body: JSON.stringify({ pattern: editor.project }) }); $('#editor-validation-pill').textContent = 'PASS'; $('#editor-validation-pill').className = 'status-pill green'; setResult('#editor-result', `PASS\n${result.patternHash}\n\nInspection SVG available via export after validation.`, 'pass'); toast('Authored pattern validated by the deterministic engine.'); } catch (error) { $('#editor-validation-pill').textContent = 'BLOCKED'; $('#editor-validation-pill').className = 'status-pill amber'; setResult('#editor-result', error.message, 'fail'); } }
+  function clearProject() { if (!window.confirm('Clear the local pattern project?')) return; loadEditorProject(blankProject(), false); localStorage.removeItem('brazen_pattern_project'); toast('Local project cleared.'); }
+
+  function editorPointerDown(event) { if (editor.mode === 'draw') { const point = screenToWorld(event); currentContour().points.push(point); editor.pointIndex = currentContour().points.length - 1; commit(); return; } if (editor.mode === 'pan') { editor.drag = { x: event.clientX, y: event.clientY, ox: editor.view.ox, oy: editor.view.oy }; return; } const nearest = nearestPoint(event); if (nearest) { editor.pieceIndex = nearest.pi; editor.contourIndex = nearest.ci; editor.pointIndex = nearest.index; editor.drag = { x: event.clientX, y: event.clientY }; renderEditor(); } }
+  function editorPointerMove(event) { const point = screenToWorld(event); $('#coordinate-readout').textContent = `x ${point.xMm.toFixed(1)} · y ${point.yMm.toFixed(1)} mm`; if (!editor.drag) return; if (editor.mode === 'pan') { editor.view.ox = editor.drag.ox + event.clientX - editor.drag.x; editor.view.oy = editor.drag.oy + event.clientY - editor.drag.y; renderEditor(); return; } const contour = currentContour(); if (editor.pointIndex !== null && contour.points[editor.pointIndex]) { contour.points[editor.pointIndex] = point; renderEditor(); } }
+  function editorPointerUp() { if (editor.drag && editor.mode === 'select') commit(); editor.drag = null; }
+
   $$('.nav-item').forEach((node) => node.addEventListener('click', () => switchView(node.dataset.view)));
   $$('[data-view-target]').forEach((node) => node.addEventListener('click', () => switchView(node.dataset.viewTarget)));
-  $('[data-action="connect-api"]').addEventListener('click', connectApi);
-  $('[data-action="validate-fit"]').addEventListener('click', runFit);
-  $('[data-action="hash-pattern"]').addEventListener('click', runPattern);
-  $('[data-action="run-study"]').addEventListener('click', runStudy);
+  $('[data-action="connect-api"]').addEventListener('click', connectApi); $('[data-action="validate-fit"]').addEventListener('click', runFit); $('[data-action="hash-pattern"]').addEventListener('click', runPattern); $('[data-action="run-study"]').addEventListener('click', runStudy);
   $('#fit-file').addEventListener('change', (event) => parseFile(event.target, (data) => { state.fit = data; $('#correction-state').textContent = `${data.recordId || 'record'} / loaded`; setResult('#fit-result', 'Record loaded locally. Choose a floor, then validate.'); }));
   $('#pattern-file').addEventListener('change', (event) => parseFile(event.target, (data) => renderPattern(data)));
   $('#study-file').addEventListener('change', (event) => parseFile(event.target, (data) => { state.study = data; const policy = Number(data.maxRelativeTemPct || 0); if (policy) $('#tem-policy').value = policy; setResult('#study-result', policy ? `Study loaded locally. Illustrative policy ${policy}% populated; review it before analysis.` : 'Study loaded locally. Enter an approved max inter-TEM policy, then analyse.'); }));
   $('#download-svg').addEventListener('click', () => { if (!state.svg) return; const blob = new Blob([state.svg], { type: 'image/svg+xml' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'brazen-inspection.svg'; link.click(); URL.revokeObjectURL(link.href); });
-  document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); $('#view-title').focus?.(); toast('Use the navigation to inspect a workspace.'); } });
-  checkHealth();
+
+  $('[data-editor-action="new-piece"]').addEventListener('click', newPiece); $('[data-editor-action="new-contour"]').addEventListener('click', newContour); $('[data-editor-action="close-contour"]').addEventListener('click', closeContour); $('[data-editor-action="undo"]').addEventListener('click', undo); $('[data-editor-action="redo"]').addEventListener('click', redo); $('[data-editor-action="save-project"]').addEventListener('click', saveProject); $('[data-editor-action="download-project"]').addEventListener('click', downloadProject); $('[data-editor-action="load-project"]').addEventListener('click', () => $('#editor-file').click()); $('[data-editor-action="fit-view"]').addEventListener('click', fitView); $('[data-editor-action="validate"]').addEventListener('click', validateEditor); $('[data-editor-action="clear-project"]').addEventListener('click', clearProject);
+  $$('[data-editor-mode]').forEach((button) => button.addEventListener('click', () => setEditorMode(button.dataset.editorMode)));
+  $('#editor-file').addEventListener('change', (event) => parseFile(event.target, (data) => loadEditorProject(data)));
+  ['project-name', 'piece-name', 'block-version'].forEach((id) => $(`#${id}`).addEventListener('input', updatePieceMeta));
+  const canvas = $('#pattern-canvas'); canvas.addEventListener('pointerdown', editorPointerDown); canvas.addEventListener('pointermove', editorPointerMove); canvas.addEventListener('pointerup', editorPointerUp); canvas.addEventListener('pointerleave', editorPointerUp); canvas.addEventListener('wheel', (event) => { event.preventDefault(); const factor = event.deltaY < 0 ? 1.1 : 0.9; editor.view.scale = Math.max(0.25, Math.min(12, editor.view.scale * factor)); renderEditor(); }, { passive: false });
+  window.addEventListener('resize', resizeCanvas); window.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); } if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') { event.preventDefault(); saveProject(); } if ((event.metaKey || event.ctrlKey) && event.key === '0') { event.preventDefault(); fitView(); } });
+  const saved = localStorage.getItem('brazen_pattern_project'); try { loadEditorProject(saved ? JSON.parse(saved) : blankProject(), false); } catch { loadEditorProject(blankProject(), false); }
+  checkHealth(); resizeCanvas();
 })();

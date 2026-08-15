@@ -12,7 +12,8 @@ This repository implements the software-verifiable part of the project without m
 - a fail-closed validator for the normative fit-correction record, including delta consistency, observation traceability, verification lifecycle, material/toile boundaries, and noise-floor eligibility;
 - integer tenths-of-a-millimetre geometry coordinates with deterministic rounded segment lengths;
 - repeatability analysis requires an explicit, approved low-TEM policy via `--max-relative-tem-pct`; without it, no measurement becomes `PRIMARY` and no tolerance budget is frozen;
-- the CLI supports repeatability analysis, fit-record validation, pattern hashing, and inspection SVG export.
+- the CLI supports repeatability analysis, fit-record validation, pattern hashing, and inspection SVG export;
+- the local Pattern Studio supports real polygonal authoring: draw/move points, close contours, create multiple pieces and contours, undo/redo, local JSON persistence, and engine-backed validation/hash.
 
 ## Deliberate non-claims
 
@@ -49,7 +50,7 @@ Open <http://127.0.0.1:8787>. If that port is occupied, use:
 BRAZEN_PORT=8788 python -m app.server
 ```
 
-The console binds to `127.0.0.1` by default, delegates to the real deterministic engine, and provides Overview, Measurement floor, Fit corrections and Geometry lab surfaces. It has no authentication and must not be exposed publicly without a separate deployment, identity and data-boundary decision.
+The console binds to `127.0.0.1` by default, delegates to the real deterministic engine, and provides Overview, Pattern Studio, Measurement floor, Fit corrections and Reference block surfaces. Pattern Studio is the authoring surface for explicit polygonal geometry; it does not claim fit or manufacturing readiness. It has no authentication and must not be exposed publicly without a separate deployment, identity and data-boundary decision.
 
 The package is dependency-free at runtime. From the repository root, the CLI can be invoked with:
 
