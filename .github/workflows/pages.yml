@@ -26,7 +26,8 @@ jobs:
       - name: Build static site
         run: |
           mkdir -p _site/static
-          cp app/static/index.html app/static/styles.css app/static/app.js _site/static/
+          cp app/static/index.html _site/index.html
+          cp app/static/styles.css app/static/app.js _site/static/
           printf '%s\n' '// Generated for GitHub Pages. The API token is entered per browser session.' 'window.BRAZEN_API_BASE = "https://brazen-pattern-engine-api.onrender.com";' > _site/static/config.js
           touch _site/.nojekyll
       - name: Configure Pages
